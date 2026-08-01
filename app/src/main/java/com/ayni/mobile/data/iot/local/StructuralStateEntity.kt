@@ -1,0 +1,46 @@
+package com.ayni.mobile.data.iot.local
+
+import androidx.room.Entity
+
+@Entity(
+    tableName = "structural_states",
+    primaryKeys = ["deviceId", "sessionId", "sequence"],
+)
+data class StructuralStateEntity(
+    val deviceId: String,
+    val sessionId: Long,
+    val sequence: Long,
+    val installationId: String?,
+    val receivedAtEpochMs: Long,
+    val complete: Boolean,
+    val espAckedBeforeReceive: Boolean,
+    val medianFrequencyHz: Double,
+    val frequencyMadHz: Double,
+    val lastFrequencyHz: Double,
+    val snrDb: Double,
+    val periodicity: Double,
+    val usefulDurationSeconds: Double,
+    val validHits: Long,
+    val attempts: Long,
+    val referenceRollDeg: Double,
+    val referencePitchDeg: Double,
+    val currentRollDeg: Double,
+    val currentPitchDeg: Double,
+    val tiltChangeDeg: Double,
+    val orientationConfidence: Double,
+    val peakAngularVelocityDps: Double,
+    val peakDynamicAccelerationMg: Double,
+    val integratedRotationXDeg: Double,
+    val integratedRotationYDeg: Double,
+    val integratedRotationZDeg: Double,
+    val abruptMovement: Boolean,
+    val accelerometerNoiseMg: Double,
+    val gyroscopeBiasXDps: Double,
+    val gyroscopeBiasYDps: Double,
+    val gyroscopeBiasZDps: Double,
+    val temperatureC: Double,
+    val lastHitValid: Boolean,
+    val fftFrequencyHz: Double,
+    val autocorrelationFrequencyHz: Double,
+    val resultReason: String,
+)

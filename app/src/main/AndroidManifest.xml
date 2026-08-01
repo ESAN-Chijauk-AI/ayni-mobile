@@ -5,8 +5,25 @@
          vibrar para el haptic del veredicto. Deliberadamente SIN android.permission.INTERNET:
          Ayni no tiene ningún camino de red, el triage es 100% on-device. -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+
+    <!-- BLE (nodo ESP32, subsistema IoT). En API 31+ basta SCAN/CONNECT; SCAN declara
+         neverForLocation porque el escaneo no se usa para deducir ubicación. En API 26–30
+         el escaneo BLE exige los permisos Bluetooth legacy y ACCESS_FINE_LOCATION, que se
+         acotan con maxSdkVersion para no pedirlos en versiones nuevas. Sigue sin INTERNET. -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="30" />
+
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-feature android:name="android.hardware.camera" android:required="true" />

@@ -13,6 +13,13 @@ import androidx.compose.runtime.Composable
 private val AyniColorScheme = darkColorScheme(
     primary = Signal,
     onPrimary = Surface,
+    // secondary/tertiary los consume el subsistema IoT (tarjetas de monitoreo). tertiary =
+    // Amarillo respeta el invariante ATC-20/estructural: un FREQUENCY_SHIFT es ÁMBAR, no rojo
+    // (ver ProtoEstados AGENT.md, invariante 6). No toca los colores de veredicto (Verde/Amarillo/Rojo).
+    secondary = Signal,
+    onSecondary = Surface,
+    tertiary = Amarillo,
+    onTertiary = Surface,
     background = Surface,
     onBackground = OnSurface,
     surface = Surface,

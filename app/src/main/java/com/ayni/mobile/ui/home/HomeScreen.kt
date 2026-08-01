@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.SensorsOff
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,6 +52,7 @@ fun HomeScreen(
     onEstructuralClick: () -> Unit,
     onMedicoClick: () -> Unit,
     onSensorStatusClick: () -> Unit,
+    onMonitoringClick: () -> Unit,
     onDisclaimerClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -182,6 +184,32 @@ fun HomeScreen(
                                 contentDescription = null
                             )
                         }
+                    }
+                }
+
+                // Acceso al monitoreo estructural del nodo ESP32 (subsistema IoT migrado).
+                Surface(
+                    onClick = onMonitoringClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(R.string.nav_monitoring),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Icon(
+                            imageVector = Icons.Filled.Sensors,
+                            contentDescription = null
+                        )
                     }
                 }
             }

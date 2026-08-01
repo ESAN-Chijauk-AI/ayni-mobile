@@ -86,6 +86,11 @@ dependencies {
     implementation(libs.nordic.ble)
     implementation(libs.kotlinx.serialization.json)
 
+    // Room (subsistema IoT). El compiler corre por KSP, no kapt (ayni ya usa KSP para Hilt).
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
     // TODO(litert-lm): reemplazar por el artefacto oficial de LiteRT-LM (Google AI Edge)
     // cuando su coordenada Maven pública esté confirmada. Ver data/ai/GemmaEngine.kt.
     implementation(libs.mediapipe.tasks.genai)

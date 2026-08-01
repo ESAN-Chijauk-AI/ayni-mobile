@@ -83,3 +83,16 @@ val AyniTypography = Typography(
         lineHeight = 16.sp
     )
 )
+
+/**
+ * Estilo para valores medidos del subsistema IoT (Hz, mg, dB, grados). Monoespaciado
+ * porque en telemetría en vivo los números cambian varias veces por segundo y con
+ * fuente proporcional la línea se desplaza en cada actualización. Migrado de ProtoEstados.
+ */
+val MetricNumberStyle = TextStyle(
+    fontFamily = MonoFont,
+    fontWeight = FontWeight.Normal,
+    fontSize = 14.sp,
+    lineHeight = 21.sp,
+    letterSpacing = 0.sp
+)

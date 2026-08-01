@@ -15,6 +15,7 @@ cameraX = "1.4.1"
 nordicBle = "2.7.2"
 kotlinxSerialization = "1.7.3"
 mediapipeTasksGenai = "0.10.35"
+room = "2.6.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -55,6 +56,12 @@ camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "
 
 nordic-ble = { group = "no.nordicsemi.android", name = "ble", version.ref = "nordicBle" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# Room: persistencia local del subsistema IoT (snapshots estructurales, trazas de 100 Hz,
+# eventos sísmicos, estados registrados). KSP procesa el DAO — el plugin ksp ya está aplicado.
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 # Motor de IA real disponible en Maven hoy (fallback autorizado por el spec mientras
 # se confirma la coordenada pública de LiteRT-LM, que sigue en preview).

@@ -54,15 +54,34 @@ Construido en la sesión inicial (andamiaje completo desde repo vacío):
 - Flujos completos: Home (F1), Triage Estructural con CameraX (F2), Triage Médico (F3),
   Resultado con semáforo+haptics (F5), estado de sensor (F4 mock), disclaimer/onboarding (§7).
 
+**Subsistema IoT migrado desde ProtoEstados (Hackathon-Julio2026)** — port completo del
+nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepository` mínimo:
+- `domain/iot/`: modelos puros (StructuralSnapshot, OperationalStatus, MeasurementTrace,
+  SeismicEventRecord…) + reglas puras (RobustStatistics, WifiCredentials, HitDiagnostic,
+  FirmwareCapabilities, Formatting). Sin android/Room; los `asEntity` se movieron a data.
+- `data/iot/ble/`: transporte real sobre `BluetoothGatt` crudo (BleGateway compat API 26+,
+  NotificationAssembler, BleJsonParser, BleProtocol). No usa Nordic.
+- `data/iot/device/`: `SensorNodeClient` + `FakeNodeClient` + `NodeClientFactory`.
+- `data/iot/local/`: Room **esquema fresco v1** (13 tablas, DAO 800+ líneas, mappers). Sin
+  historial de migraciones ni tabla médica.
+- `data/iot/StructuralStateRepository.kt` (Hilt @Singleton).
+- `di/IotModule.kt`: provee IotDatabase/DAO/NodeClientFactory (reemplaza el AppContainer manual).
+- `ui/iot/`: `MonitoringViewModel` (@HiltViewModel, era MainViewModel), `MonitoringScreen`
+  (3 pestañas: Medir/Historial/Equipo), `NodeWifiCard`, `MonitoringRoute` (permisos BLE).
+  Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
+- Nav: destino `MONITORING` accesible desde Home. Manifest con permisos BLE por rango de SDK.
+- **Sin verificar en Android Studio** (Gradle sync/build/BLE en dispositivo pendientes).
+
 Pendiente (en orden de impacto):
 1. **Integrar el SDK real de Gemma** en `GemmaEngineImpl` (LiteRT-LM cuando su artefacto
    Maven público esté confirmado, o MediaPipe `tasks-genai` ya declarado en Gradle).
 2. Colocar el modelo `gemma-4-E2B-it.litertlm` en el dispositivo — ver instrucciones en
    `data/ai/ModelPaths.kt`. Nunca commitear este archivo (`.gitignore` ya lo excluye).
-3. BLE real con Nordic Android-BLE-Library sobre el ESP32+MPU6050 (`BleSensorRepository`).
+3. IoT: verificar compilación/Room/BLE en dispositivo; opcionalmente unificar el
+   `SensorRepository` mínimo (readout de triage estructural) con el `SensorNodeClient` del
+   nodo, y cablear el request de `ACCESS_FINE_LOCATION` en API<31 dentro de `MonitoringRoute`.
 4. Fuentes custom (Space Grotesk/Inter Tight, Inter, JetBrains Mono) si hay tiempo.
-5. Historial local (F7, Room) — opcional, no bloquea el MVP.
-6. Ícono de launcher definitivo (hoy es un placeholder de onda/sismógrafo).
+5. Ícono de launcher definitivo (hoy es un placeholder de onda/sismógrafo).
 
 ## Convenciones de commit
 

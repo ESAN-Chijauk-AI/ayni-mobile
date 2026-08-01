@@ -64,4 +64,124 @@
     <string name="disclaimer_body_privacy">Todo corre en tu teléfono. Tus fotos y datos no salen del dispositivo, nunca.</string>
     <string name="disclaimer_body_caution">El veredicto es orientativo. Ante la duda, Ayni prefiere pecar de cauteloso: sube de nivel antes que bajarlo.</string>
     <string name="disclaimer_action_acknowledge">Entendido, continuar</string>
+
+    <!-- ===================== Subsistema IoT (migrado de ProtoEstados) ===================== -->
+    <string name="nav_monitoring">Monitoreo</string>
+
+    <!-- Comprobación de sensores en reposo. Sirve para verificar que el IMU
+         responde antes de confiar en una medición. -->
+    <string name="monitoring_sensor_check_title">Comprobación del sensor</string>
+    <string name="monitoring_sensor_check_subtitle">Mueve o gira el sensor: las barras deben reaccionar.</string>
+    <string name="monitoring_sensor_check_gyro">Giro · giroscopio</string>
+    <string name="monitoring_sensor_check_accel">Movimiento · acelerómetro</string>
+    <string name="monitoring_sensor_check_tilt">Inclinación desde la referencia</string>
+    <string name="monitoring_sensor_check_hint">El modelo 3D usa el acelerómetro; la barra de giro usa el giroscopio. Si una se mueve y la otra no, ese es el sensor con problema.</string>
+    <string name="monitoring_sensor_check_waiting">La telemetría en vivo requiere firmware 0.7 o superior. Con versiones anteriores estos valores sólo se actualizan tras un golpe.</string>
+
+    <!-- Cambio de red del nodo. Sirve para llevarlo a otra sede sin reflashear. -->
+    <string name="wifi_title">Red del sensor</string>
+    <string name="wifi_subtitle">Cámbiala para llevar el nodo a otro lugar</string>
+    <string name="wifi_connected">Conectado a «%1$s»</string>
+    <string name="wifi_connected_ip">Servidor web en %1$s</string>
+    <string name="wifi_offline">Sin conexión a «%1$s»</string>
+    <string name="wifi_offline_detail">El nodo sigue midiendo y enviando por Bluetooth; sólo se pierde la web local.</string>
+    <string name="wifi_unsupported">Este firmware no informa de su red. Requiere la versión 0.8 o superior.</string>
+    <string name="wifi_ssid_label">Nombre de la red</string>
+    <string name="wifi_password_label">Clave</string>
+    <string name="wifi_password_helper">Déjala vacía si la red es abierta. Mínimo 8 caracteres si no lo es.</string>
+    <string name="wifi_send">Enviar red al sensor</string>
+    <string name="wifi_warning">La clave viaja sin cifrar por Bluetooth. Úsalo con una red de demostración o con el punto de acceso de tu teléfono, nunca con la red real de una instalación.</string>
+
+    <string name="monitoring_tab_measure">Medir</string>
+    <string name="monitoring_tab_history">Historial</string>
+    <string name="monitoring_tab_equipment">Equipo</string>
+    <string name="monitoring_orientation_title">Orientación en vivo</string>
+    <string name="monitoring_orientation_subtitle">Posición angular del sensor respecto a la gravedad</string>
+    <string name="monitoring_mount_status_active">ACTIVO</string>
+    <string name="monitoring_mount_status_required">REQUERIDO</string>
+    <string name="monitoring_connection_status_online">EN LÍNEA</string>
+    <string name="monitoring_connection_status_progress">EN PROCESO</string>
+    <string name="monitoring_connection_status_offline">SIN ENLACE</string>
+    <string name="monitoring_mode_subtitle">Selecciona cómo debe interpretar el movimiento</string>
+    <string name="monitoring_live_subtitle">Telemetría estructural en vivo</string>
+    <string name="history_segment_states">Estados</string>
+    <string name="history_segment_seismic">Sismos</string>
+
+    <!-- Recuento de resultados. Sirve para ver de un vistazo qué regla está
+         descartando las capturas, en vez de afinar el firmware a ciegas. -->
+    <string name="measure_tally_title">Resultados de esta sesión</string>
+    <string name="measure_tally_subtitle">Qué decidió cada captura, de más a menos frecuente</string>
+    <string name="measure_tally_empty">Todavía no hay capturas. Activa Golpes y da un impacto.</string>
+    <string name="measure_tally_row">%1$d · %2$d %%</string>
+    <string name="measure_tally_accepted_share">%1$d de %2$d aprovechables</string>
+    <string name="measure_tally_dominant">La causa dominante es «%1$s». Revisa su umbral antes de seguir midiendo.</string>
+
+    <string name="diagnostic_short_saturated">Sensor saturado</string>
+    <string name="diagnostic_short_low_signal">Señal insuficiente</string>
+    <string name="diagnostic_short_peak_range">Frecuencia fuera de rango</string>
+    <string name="diagnostic_short_cycles">Pocos ciclos</string>
+    <string name="diagnostic_short_snr">Relación señal/ruido baja</string>
+    <string name="diagnostic_short_periodicity">Poco periódica</string>
+    <string name="diagnostic_short_mismatch">Métodos discrepan</string>
+    <string name="diagnostic_short_shift">Cambio de frecuencia</string>
+    <string name="diagnostic_short_accepted">Aceptada</string>
+    <string name="diagnostic_short_unknown">Sin traza</string>
+
+    <string name="measure_diagnostic_what_happened">Qué pasó</string>
+    <string name="measure_diagnostic_next_step">Qué hacer ahora</string>
+    <string name="measure_diagnostic_show_details">Ver detalle</string>
+    <string name="measure_diagnostic_hide_details">Ocultar detalle</string>
+    <string name="measure_diagnostic_technical_title">Criterio técnico</string>
+    <string name="measure_diagnostic_warning_title">Advertencia técnica</string>
+    <string name="measure_diagnostic_code_stage">Código %1$s · etapa %2$s</string>
+    <string name="measure_diagnostic_measured_range">Medido %1$s%2$s · rango esperado %3$s–%4$s%2$s</string>
+    <string name="measure_diagnostic_measured_minimum">Medido %1$s%2$s · mínimo requerido %3$s%2$s</string>
+    <string name="measure_diagnostic_measured_maximum">Medido %1$s%2$s · máximo permitido %3$s%2$s</string>
+    <string name="measure_diagnostic_measured_no_limit">Medido %1$s%2$s · sin umbral numérico</string>
+    <string name="measure_diagnostic_graph_title">Cómo leer la gráfica</string>
+    <string name="measure_diagnostic_graph_samples">Los puntos rojos son las muestras que superaron el límite del sensor.</string>
+    <string name="measure_diagnostic_graph_range">La zona roja muestra el tramo usado por la regla que descartó la captura.</string>
+    <string name="measure_diagnostic_graph_capture">La regla evalúa toda la zona útil: el rojo no significa que cada punto sea defectuoso.</string>
+    <string name="measure_diagnostic_graph_history">No hay puntos defectuosos: la onda fue válida y sólo cambió respecto al historial.</string>
+    <string name="measure_diagnostic_graph_accepted">La línea azul es la onda analizada y la zona gris es la cola de reposo excluida.</string>
+
+    <string name="measure_diagnostic_saturated_summary">El golpe fue demasiado fuerte para el rango del sensor y una parte de la onda quedó recortada.</string>
+    <string name="measure_diagnostic_saturated_action">Golpea más suave y sobre la estructura, no directamente sobre el sensor.</string>
+    <string name="measure_diagnostic_saturated_technical">El acelerómetro llegó cerca de su límite de ±2 g. Una onda recortada puede crear frecuencias falsas, por eso no se usa.</string>
+
+    <string name="measure_diagnostic_low_signal_summary">El golpe activó el sensor, pero después del impacto quedó muy poca vibración útil.</string>
+    <string name="measure_diagnostic_low_signal_action">Comprueba que el sensor esté firme, golpea la estructura una sola vez y calibra nuevamente si hubo movimiento al iniciar.</string>
+    <string name="measure_diagnostic_low_signal_technical">El RMS inicial —la intensidad media de la oscilación libre— quedó por debajo de 1,15 veces el ruido calibrado.</string>
+
+    <string name="measure_diagnostic_peak_range_summary">La frecuencia dominante quedó fuera del intervalo que esta versión puede evaluar con confianza.</string>
+    <string name="measure_diagnostic_peak_range_action">Repite el golpe. Si ocurre de forma constante, la estructura podría vibrar fuera del rango configurado de 0,5 a 25 Hz.</string>
+    <string name="measure_diagnostic_peak_range_technical">La FFT —transformada rápida de Fourier— no encontró un pico confiable dentro de 0,5–25 Hz.</string>
+
+    <string name="measure_diagnostic_cycles_summary">La vibración terminó antes de repetir suficientes veces el mismo movimiento.</string>
+    <string name="measure_diagnostic_cycles_action">Da un golpe breve y deja la estructura completamente libre hasta terminar la captura.</string>
+    <string name="measure_diagnostic_cycles_technical">La ventana útil contiene menos de 2,5 ciclos. Las frecuencias bajas necesitan una oscilación más larga para poder confirmarse.</string>
+
+    <string name="measure_diagnostic_snr_summary">Ninguna frecuencia sobresalió claramente entre el resto del movimiento.</string>
+    <string name="measure_diagnostic_snr_action">Da un solo golpe corto y no vuelvas a tocar la estructura, el sensor ni el cable durante la captura.</string>
+    <string name="measure_diagnostic_snr_technical">SNR significa relación señal/ruido. Compara la potencia del pico de la FFT con el fondo del espectro; se requieren al menos 8 dB.</string>
+
+    <string name="measure_diagnostic_periodicity_summary">La onda no repitió un patrón suficientemente regular.</string>
+    <string name="measure_diagnostic_periodicity_action">Evita golpes dobles y comprueba que el sensor y su soporte no se muevan por separado.</string>
+    <string name="measure_diagnostic_periodicity_technical">La autocorrelación compara la onda consigo misma un periodo después. La similitud obtenida debe ser al menos 0,20.</string>
+
+    <string name="measure_diagnostic_mismatch_summary">Dos métodos de cálculo encontraron frecuencias distintas en la misma captura.</string>
+    <string name="measure_diagnostic_mismatch_action">Repite con un único golpe limpio. Dos impactos o varias vibraciones mezcladas suelen producir este resultado.</string>
+    <string name="measure_diagnostic_mismatch_technical">La frecuencia de la FFT y la derivada del periodo por autocorrelación difieren más que el máximo permitido: 0,60 Hz o 12 por ciento de la FFT.</string>
+
+    <string name="measure_diagnostic_shift_summary">La medición es confiable, pero la frecuencia cambió respecto a los golpes anteriores.</string>
+    <string name="measure_diagnostic_shift_action">No es un descarte. Repite algunos golpes y, si el cambio se mantiene, úsalo para registrar un nuevo estado.</string>
+    <string name="measure_diagnostic_shift_technical">La captura pasó calidad, ciclos y coherencia. Su frecuencia quedó fuera de la tolerancia robusta calculada con mediana y MAD.</string>
+
+    <string name="measure_diagnostic_accepted_summary">La vibración fue suficientemente clara, repetitiva y coherente para medir su frecuencia.</string>
+    <string name="measure_diagnostic_accepted_action">Puedes seleccionar este golpe para construir un estado junto con otras mediciones válidas.</string>
+    <string name="measure_diagnostic_accepted_technical">La captura superó todas las reglas de señal, ventana útil, FFT, autocorrelación y coherencia.</string>
+
+    <string name="measure_diagnostic_unknown_summary">El firmware marcó un resultado que esta versión de la aplicación todavía no reconoce.</string>
+    <string name="measure_diagnostic_unknown_action">Conserva la captura y revisa el código técnico antes de repetir o actualizar la aplicación.</string>
+    <string name="measure_diagnostic_unknown_technical">El código no pertenece al catálogo conocido. Los valores y la gráfica se muestran sin reinterpretarlos.</string>
 </resources>

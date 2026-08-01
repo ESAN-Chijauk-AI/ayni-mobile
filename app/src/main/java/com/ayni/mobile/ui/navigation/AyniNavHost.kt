@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.ayni.mobile.ui.home.HomeScreen
+import com.ayni.mobile.ui.iot.MonitoringRoute
 import com.ayni.mobile.ui.medical.MedicalInputScreen
 import com.ayni.mobile.ui.medical.MedicalResultScreen
 import com.ayni.mobile.ui.onboarding.DisclaimerScreen
@@ -53,11 +54,18 @@ fun AyniNavHost(
             SensorStatusScreen(onBack = { navController.popBackStack() })
         }
 
+        // Monitoreo estructural del nodo ESP32 (subsistema IoT). MonitoringRoute engancha
+        // su propio MonitoringViewModel (Hilt) y gestiona el permiso de Bluetooth cercano.
+        composable(AyniDestinations.MONITORING) {
+            MonitoringRoute()
+        }
+
         composable(AyniDestinations.HOME) {
             HomeScreen(
                 onEstructuralClick = { navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) },
                 onMedicoClick = { navController.navigate(AyniDestinations.MEDICAL_GRAPH) },
                 onSensorStatusClick = { navController.navigate(AyniDestinations.SENSOR_STATUS) },
+                onMonitoringClick = { navController.navigate(AyniDestinations.MONITORING) },
                 onDisclaimerClick = { navController.navigate(AyniDestinations.DISCLAIMER) }
             )
         }
