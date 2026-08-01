@@ -30,6 +30,47 @@ enum class ProximityScanStatus {
     ERROR,
 }
 
+enum class ProximityRole {
+    SOS,
+    RESCUER,
+}
+
+enum class GattConfirmationStatus {
+    IDLE,
+    CONNECTING,
+    CONFIRMED,
+    FAILED,
+}
+
+enum class RangingTechnology {
+    BLE_RSSI,
+    UWB,
+}
+
+enum class UwbRangingStatus {
+    UNAVAILABLE,
+    READY,
+    NEGOTIATING,
+    RANGING,
+    FAILED,
+}
+
+data class SosReceptionState(
+    val confirmedDetectors: Int = 0,
+    val uwbAvailable: Boolean = false,
+)
+
+data class PeerConnectionState(
+    val peerId: String? = null,
+    val confirmationStatus: GattConfirmationStatus = GattConfirmationStatus.IDLE,
+    val uwbStatus: UwbRangingStatus = UwbRangingStatus.UNAVAILABLE,
+    val technology: RangingTechnology = RangingTechnology.BLE_RSSI,
+    val distanceMeters: Float? = null,
+    val azimuthDegrees: Float? = null,
+    val elevationDegrees: Float? = null,
+    val errorMessage: String? = null,
+)
+
 data class NearbySosSignal(
     val peerId: String,
     val rawRssi: Int,
@@ -38,4 +79,3 @@ data class NearbySosSignal(
     val trend: ProximityTrend,
     val lastSeenElapsedRealtimeMs: Long,
 )
-

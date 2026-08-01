@@ -9,9 +9,13 @@ class ManageEmergencyProximityUseCase @Inject constructor(
     val sosStatus = repository.sosStatus
     val scanStatus = repository.scanStatus
     val nearbySignals = repository.nearbySignals
+    val sosReceptionState = repository.sosReceptionState
+    val peerConnectionState = repository.peerConnectionState
 
     fun activateSos() = repository.activateSos()
     fun deactivateSos() = repository.deactivateSos()
     fun startDetection() = repository.startDetection()
     fun stopDetection() = repository.stopDetection()
+    fun confirmAndRange(peerId: String) = repository.confirmAndRange(peerId)
+    fun disconnectPeer() = repository.disconnectPeer()
 }

@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -55,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -68,11 +71,15 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ayni.mobile.R
+import com.ayni.mobile.domain.proximity.GattConfirmationStatus
 import com.ayni.mobile.domain.proximity.NearbySosSignal
+import com.ayni.mobile.domain.proximity.ProximityRole
 import com.ayni.mobile.domain.proximity.ProximityScanStatus
 import com.ayni.mobile.domain.proximity.ProximitySignalLevel
 import com.ayni.mobile.domain.proximity.ProximityTrend
+import com.ayni.mobile.domain.proximity.RangingTechnology
 import com.ayni.mobile.domain.proximity.SosModeStatus
+import com.ayni.mobile.domain.proximity.UwbRangingStatus
 import com.ayni.mobile.ui.components.PrimaryActionButton
 import com.ayni.mobile.ui.theme.AyniSemanticColors
 import com.ayni.mobile.ui.theme.Spacing
@@ -87,7 +94,8 @@ fun ProximityRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ProximityScreen(
         state = state,
-        onBack = onBack,
+        onBack = { if (state.role == null) onBack() else viewModel.clearRole() },
+        onSelectRole = viewModel::selectRole,
         onActivateSos = viewModel::activateSos,
         onDeactivateSos = viewModel::deactivateSos,
         onStartDetection = viewModel::startDetection,
@@ -101,6 +109,7 @@ fun ProximityRoute(
 private fun ProximityScreen(
     state: ProximityUiState,
     onBack: () -> Unit,
+    onSelectRole: (ProximityRole) -> Unit,
     onActivateSos: () -> Unit,
     onDeactivateSos: () -> Unit,
     onStartDetection: () -> Unit,
@@ -108,16 +117,19 @@ private fun ProximityScreen(
     onSelectSignal: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    var permissionsGranted by remember { mutableStateOf(hasProximityPermissions(context)) }
+    var permissionsGranted by remember(state.role) {
+        mutableStateOf(state.role?.let { hasRolePermissions(context, it) } ?: true)
+    }
     var showSosConfirmation by remember { mutableStateOf(false) }
     var pulseEnabled by remember { mutableStateOf(true) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
-    ) { permissionsGranted = hasProximityPermissions(context) }
+    ) { state.role?.let { permissionsGranted = hasRolePermissions(context, it) } }
 
     ProximityPulseEffect(
         signal = state.selectedSignal,
-        enabled = pulseEnabled && state.scanStatus == ProximityScanStatus.SCANNING,
+        enabled = state.role == ProximityRole.RESCUER && pulseEnabled &&
+            state.scanStatus == ProximityScanStatus.SCANNING && !state.signalLost,
     )
 
     if (showSosConfirmation) {
@@ -143,7 +155,15 @@ private fun ProximityScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.proximity_title)) },
+                title = {
+                    Text(
+                        when (state.role) {
+                            ProximityRole.SOS -> stringResource(R.string.proximity_role_sos)
+                            ProximityRole.RESCUER -> stringResource(R.string.proximity_role_rescuer)
+                            null -> stringResource(R.string.proximity_title)
+                        },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -155,149 +175,167 @@ private fun ProximityScreen(
             )
         },
     ) { padding ->
-        if (!permissionsGranted) {
-            PermissionRequired(
+        when {
+            state.role == null -> RoleChooser(
                 modifier = Modifier.padding(padding),
-                onRequest = { permissionLauncher.launch(requiredProximityPermissions()) },
+                sosActive = state.sosStatus == SosModeStatus.ACTIVE,
+                onSelectRole = onSelectRole,
             )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(Spacing.md),
-                verticalArrangement = Arrangement.spacedBy(Spacing.md),
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.proximity_safety_notice),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                item {
-                    SosCard(
-                        status = state.sosStatus,
-                        detectionActive = state.scanStatus == ProximityScanStatus.SCANNING,
-                        onActivate = { showSosConfirmation = true },
-                        onDeactivate = onDeactivateSos,
-                    )
-                }
-                item {
-                    DetectorControls(
-                        state = state,
-                        pulseEnabled = pulseEnabled,
-                        onPulseEnabledChange = { pulseEnabled = it },
-                        onStart = onStartDetection,
-                        onStop = onStopDetection,
-                    )
-                }
-                if (state.scanStatus == ProximityScanStatus.SCANNING) {
-                    item {
-                        SignalGuide(
-                            selectedPeerId = state.selectedPeerId,
-                            signal = state.selectedSignal,
-                        )
-                    }
-                    if (state.signals.size > 1) {
-                        item {
-                            Text(
-                                stringResource(R.string.proximity_detected_signals),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        }
-                        items(state.signals, key = { it.peerId }) { signal ->
-                            SignalChoice(
-                                signal = signal,
-                                selected = signal.peerId == state.selectedPeerId,
-                                onClick = { onSelectSignal(signal.peerId) },
-                            )
-                        }
-                    }
-                }
+            !permissionsGranted -> PermissionRequired(
+                modifier = Modifier.padding(padding),
+                onRequest = { permissionLauncher.launch(requiredPermissions(context, state.role)) },
+            )
+            state.role == ProximityRole.SOS -> SosRoleContent(
+                modifier = Modifier.padding(padding),
+                state = state,
+                onActivate = { showSosConfirmation = true },
+                onDeactivate = onDeactivateSos,
+            )
+            else -> RescuerRoleContent(
+                modifier = Modifier.padding(padding),
+                state = state,
+                pulseEnabled = pulseEnabled,
+                onPulseEnabledChange = { pulseEnabled = it },
+                onStart = onStartDetection,
+                onStop = onStopDetection,
+                onSelectSignal = onSelectSignal,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleChooser(
+    modifier: Modifier,
+    sosActive: Boolean,
+    onSelectRole: (ProximityRole) -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        Text(stringResource(R.string.proximity_choose_role), style = MaterialTheme.typography.headlineMedium)
+        Text(
+            stringResource(R.string.proximity_choose_role_body),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        RoleCard(
+            icon = { Icon(Icons.Filled.Campaign, null, tint = AyniSemanticColors.rojo) },
+            title = stringResource(R.string.proximity_role_sos),
+            body = stringResource(R.string.proximity_role_sos_body),
+            emphasized = sosActive,
+            onClick = { onSelectRole(ProximityRole.SOS) },
+        )
+        RoleCard(
+            icon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.primary) },
+            title = stringResource(R.string.proximity_role_rescuer),
+            body = stringResource(R.string.proximity_role_rescuer_body),
+            emphasized = false,
+            onClick = { onSelectRole(ProximityRole.RESCUER) },
+        )
+        Text(
+            stringResource(R.string.proximity_safety_notice),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun RoleCard(
+    icon: @Composable () -> Unit,
+    title: String,
+    body: String,
+    emphasized: Boolean,
+    onClick: () -> Unit,
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (emphasized) AyniSemanticColors.rojo.copy(alpha = 0.14f)
+            else MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Row(Modifier.padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { icon() }
+            Column(Modifier.padding(start = Spacing.md)) {
+                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(body, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun PermissionRequired(modifier: Modifier, onRequest: () -> Unit) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(Spacing.lg),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+private fun SosRoleContent(
+    modifier: Modifier,
+    state: ProximityUiState,
+    onActivate: () -> Unit,
+    onDeactivate: () -> Unit,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        Icon(
-            Icons.Filled.BluetoothSearching,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(Spacing.md))
-        Text(
-            stringResource(R.string.proximity_permission_body),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(Spacing.lg))
-        PrimaryActionButton(
-            text = stringResource(R.string.proximity_permission_action),
-            onClick = onRequest,
-        )
+        item { SosCard(state.sosStatus, onActivate, onDeactivate) }
+        if (state.sosStatus == SosModeStatus.ACTIVE) {
+            item {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Text("Confirmación de rescate", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            if (state.reception.confirmedDetectors == 0) {
+                                stringResource(R.string.proximity_waiting_confirmation)
+                            } else {
+                                stringResource(R.string.proximity_confirmed_count, state.reception.confirmedDetectors)
+                            },
+                            color = if (state.reception.confirmedDetectors > 0) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (state.reception.confirmedDetectors > 0) FontWeight.Bold else FontWeight.Normal,
+                        )
+                        Text(
+                            stringResource(
+                                if (state.reception.uwbAvailable) R.string.proximity_uwb_ready
+                                else R.string.proximity_uwb_fallback,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+        }
+        item {
+            Text(
+                stringResource(R.string.proximity_safety_notice),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
 @Composable
-private fun SosCard(
-    status: SosModeStatus,
-    detectionActive: Boolean,
-    onActivate: () -> Unit,
-    onDeactivate: () -> Unit,
-) {
-    val active = status != SosModeStatus.INACTIVE
+private fun SosCard(status: SosModeStatus, onActivate: () -> Unit, onDeactivate: () -> Unit) {
+    val running = status == SosModeStatus.STARTING || status == SosModeStatus.ACTIVE
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = if (active) {
-                AyniSemanticColors.rojo.copy(alpha = 0.16f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
+            containerColor = if (running) AyniSemanticColors.rojo.copy(alpha = 0.16f)
+            else MaterialTheme.colorScheme.surfaceVariant,
         ),
     ) {
-        Column(
-            modifier = Modifier.padding(Spacing.md),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
+        Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Filled.Campaign,
-                    contentDescription = null,
-                    tint = AyniSemanticColors.rojo,
-                )
+                Icon(Icons.Filled.Campaign, null, tint = AyniSemanticColors.rojo, modifier = Modifier.size(40.dp))
                 Text(
                     stringResource(R.string.proximity_sos_mode),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(start = Spacing.sm),
                 )
             }
-            Text(
-                when (status) {
-                    SosModeStatus.INACTIVE -> stringResource(R.string.proximity_sos_inactive)
-                    SosModeStatus.STARTING -> stringResource(R.string.proximity_sos_starting)
-                    SosModeStatus.ACTIVE -> stringResource(R.string.proximity_sos_active)
-                    SosModeStatus.UNSUPPORTED -> stringResource(R.string.proximity_sos_unsupported)
-                    SosModeStatus.ERROR -> stringResource(R.string.proximity_sos_error)
-                },
-                color = if (status == SosModeStatus.ACTIVE) {
-                    AyniSemanticColors.rojo
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                fontWeight = if (status == SosModeStatus.ACTIVE) FontWeight.Bold else FontWeight.Normal,
-            )
-            if (active) {
+            Text(sosStatusText(status), fontWeight = if (running) FontWeight.Bold else FontWeight.Normal)
+            if (running) {
                 PrimaryActionButton(
                     text = stringResource(R.string.proximity_stop_sos),
                     onClick = onDeactivate,
@@ -310,7 +348,6 @@ private fun SosCard(
                 PrimaryActionButton(
                     text = stringResource(R.string.proximity_activate_sos),
                     onClick = onActivate,
-                    enabled = !detectionActive,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AyniSemanticColors.rojo,
                         contentColor = Color.White,
@@ -322,33 +359,63 @@ private fun SosCard(
 }
 
 @Composable
-private fun DetectorControls(
+private fun RescuerRoleContent(
+    modifier: Modifier,
     state: ProximityUiState,
     pulseEnabled: Boolean,
     onPulseEnabledChange: (Boolean) -> Unit,
     onStart: () -> Unit,
     onStop: () -> Unit,
+    onSelectSignal: (String) -> Unit,
 ) {
     val scanning = state.scanStatus == ProximityScanStatus.SCANNING
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(Spacing.md),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        item {
+            DetectorControls(state.scanStatus, pulseEnabled, onPulseEnabledChange, onStart, onStop)
+        }
+        if (scanning) {
+            item { ConnectionStatus(state) }
+            item { SignalGuide(state) }
+            if (state.signals.isNotEmpty()) {
+                item { Text(stringResource(R.string.proximity_detected_signals), style = MaterialTheme.typography.titleMedium) }
+                items(state.signals, key = { it.peerId }) { signal ->
+                    SignalChoice(
+                        signal = signal,
+                        selected = signal.peerId == state.selectedPeerId,
+                        onClick = { onSelectSignal(signal.peerId) },
+                    )
+                }
+            }
+        }
+        item {
             Text(
-                stringResource(R.string.proximity_detector_mode),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                scanStatusText(state.scanStatus),
+                stringResource(R.string.proximity_safety_notice),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+private fun DetectorControls(
+    status: ProximityScanStatus,
+    pulseEnabled: Boolean,
+    onPulseEnabledChange: (Boolean) -> Unit,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+) {
+    val scanning = status == ProximityScanStatus.SCANNING
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Text(stringResource(R.string.proximity_detector_mode), style = MaterialTheme.typography.titleLarge)
+            Text(scanStatusText(status), color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (scanning) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                     Text(stringResource(R.string.proximity_pulse_toggle))
                     Switch(checked = pulseEnabled, onCheckedChange = onPulseEnabledChange)
                 }
@@ -356,92 +423,115 @@ private fun DetectorControls(
                     Text(stringResource(R.string.proximity_stop_search))
                 }
             } else {
-                PrimaryActionButton(
-                    text = stringResource(R.string.proximity_start_search),
-                    onClick = onStart,
-                    enabled = state.sosStatus == SosModeStatus.INACTIVE,
-                )
+                PrimaryActionButton(text = stringResource(R.string.proximity_start_search), onClick = onStart)
             }
         }
     }
 }
 
 @Composable
-private fun SignalGuide(selectedPeerId: String?, signal: NearbySosSignal?) {
-    val intensityTarget = when (signal?.level) {
-        ProximitySignalLevel.STRONG -> 1f
-        ProximitySignalLevel.MEDIUM -> 0.62f
-        ProximitySignalLevel.WEAK -> 0.28f
-        null -> 0.08f
+private fun ConnectionStatus(state: ProximityUiState) {
+    if (state.selectedPeerId == null) return
+    val text = when {
+        state.connection.confirmationStatus == GattConfirmationStatus.CONNECTING ->
+            stringResource(R.string.proximity_gatt_connecting)
+        state.connection.confirmationStatus == GattConfirmationStatus.FAILED ->
+            stringResource(R.string.proximity_gatt_failed)
+        state.connection.uwbStatus == UwbRangingStatus.NEGOTIATING ->
+            stringResource(R.string.proximity_uwb_negotiating)
+        state.connection.technology == RangingTechnology.UWB ->
+            stringResource(R.string.proximity_uwb_ranging)
+        state.connection.confirmationStatus == GattConfirmationStatus.CONFIRMED ->
+            stringResource(R.string.proximity_gatt_confirmed)
+        else -> stringResource(R.string.proximity_ble_fallback)
+    }
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Text(text, Modifier.padding(Spacing.md), color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+@Composable
+private fun SignalGuide(state: ProximityUiState) {
+    val signal = state.selectedSignal
+    val uwbDistance = state.connection.distanceMeters
+        .takeIf { state.connection.peerId == state.selectedPeerId }
+    val intensityTarget = when {
+        uwbDistance != null -> (1f - (uwbDistance / 15f)).coerceIn(0.12f, 1f)
+        signal?.level == ProximitySignalLevel.STRONG -> 1f
+        signal?.level == ProximitySignalLevel.MEDIUM -> 0.62f
+        signal?.level == ProximitySignalLevel.WEAK -> 0.28f
+        else -> 0.08f
     }
     val intensity by animateFloatAsState(intensityTarget, label = "signal-intensity")
     val outlineColor = MaterialTheme.colorScheme.outline
-    val description = signal?.let {
-        "${signalLevelText(it.level)}. ${trendText(it.trend)}"
-    } ?: stringResource(R.string.proximity_searching_signal)
+    val description = when {
+        state.signalLost -> stringResource(R.string.proximity_signal_lost)
+        uwbDistance != null -> stringResource(R.string.proximity_distance_uwb, uwbDistance)
+        signal != null -> "${signalLevelText(signal.level)}. ${trendText(signal.trend)}"
+        else -> stringResource(R.string.proximity_searching_signal)
+    }
 
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+    OutlinedCard(Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.md),
+            Modifier.fillMaxWidth().padding(Spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Canvas(
-                    modifier = Modifier
-                        .size(230.dp)
-                        .semantics { contentDescription = description },
-                ) {
+                Canvas(Modifier.size(230.dp).semantics { contentDescription = description }) {
                     val center = Offset(size.width / 2f, size.height / 2f)
                     val maxRadius = min(size.width, size.height) / 2f
                     repeat(4) { index ->
-                        val fraction = (index + 1) / 4f
                         drawCircle(
-                            color = AyniSemanticColors.signal.copy(
-                                alpha = 0.12f + intensity * (0.07f + index * 0.025f),
-                            ),
-                            radius = maxRadius * fraction,
+                            color = AyniSemanticColors.signal.copy(alpha = 0.12f + intensity * (0.07f + index * 0.025f)),
+                            radius = maxRadius * ((index + 1) / 4f),
                             center = center,
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(
-                                width = 2.dp.toPx() + intensity * 3.dp.toPx(),
-                            ),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx() + intensity * 3.dp.toPx()),
                         )
                     }
                     drawCircle(
-                        color = if (signal == null) {
-                            outlineColor
-                        } else {
-                            AyniSemanticColors.rojo
-                        },
+                        color = if (signal == null && uwbDistance == null) outlineColor
+                        else AyniSemanticColors.rojo,
                         radius = 12.dp.toPx() + intensity * 12.dp.toPx(),
                         center = center,
                     )
                 }
-                if (signal == null) CircularProgressIndicator()
+                when {
+                    state.signalLost -> Icon(Icons.Filled.Warning, null, tint = AyniSemanticColors.rojo, modifier = Modifier.size(48.dp))
+                    state.connection.azimuthDegrees != null -> Icon(
+                        Icons.Filled.Navigation,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(54.dp).graphicsLayer { rotationZ = state.connection.azimuthDegrees ?: 0f },
+                    )
+                    signal == null -> CircularProgressIndicator()
+                }
             }
             Text(
-                text = signal?.let { signalLevelText(it.level) }
-                    ?: stringResource(R.string.proximity_searching_signal),
+                when {
+                    state.signalLost -> stringResource(R.string.proximity_signal_lost)
+                    uwbDistance != null -> stringResource(R.string.proximity_distance_uwb, uwbDistance)
+                    signal != null -> signalLevelText(signal.level)
+                    else -> stringResource(R.string.proximity_searching_signal)
+                },
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = signal?.let { trendText(it.trend) }
-                    ?: stringResource(R.string.proximity_move_slowly),
-                color = MaterialTheme.colorScheme.primary,
+                when {
+                    state.signalLost -> stringResource(R.string.proximity_signal_lost_body)
+                    state.connection.azimuthDegrees != null -> stringResource(R.string.proximity_azimuth_uwb, state.connection.azimuthDegrees ?: 0f)
+                    signal != null -> trendText(signal.trend)
+                    else -> stringResource(R.string.proximity_move_slowly)
+                },
+                color = if (state.signalLost) AyniSemanticColors.rojo else MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
             )
-            if (selectedPeerId != null) {
-                Text(
-                    stringResource(R.string.proximity_signal_id, selectedPeerId.takeLast(6)),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            state.selectedPeerId?.let {
+                Text(stringResource(R.string.proximity_signal_id, it.takeLast(6)), style = MaterialTheme.typography.labelMedium)
             }
-            signal?.let {
+            if (uwbDistance == null) signal?.let {
                 Text(
                     stringResource(R.string.proximity_signal_technical, it.smoothedRssi.toInt()),
                     style = MaterialTheme.typography.bodySmall,
@@ -449,7 +539,8 @@ private fun SignalGuide(selectedPeerId: String?, signal: NearbySosSignal?) {
                 )
             }
             Text(
-                stringResource(R.string.proximity_direction_warning),
+                if (uwbDistance == null) stringResource(R.string.proximity_direction_warning)
+                else stringResource(R.string.proximity_uwb_ranging),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -461,31 +552,44 @@ private fun SignalGuide(selectedPeerId: String?, signal: NearbySosSignal?) {
 @Composable
 private fun SignalChoice(signal: NearbySosSignal, selected: Boolean, onClick: () -> Unit) {
     OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
+            containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            else MaterialTheme.colorScheme.surface,
         ),
     ) {
-        Row(
-            modifier = Modifier.padding(Spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Filled.Campaign, contentDescription = null, tint = AyniSemanticColors.rojo)
-            Column(modifier = Modifier.padding(start = Spacing.md)) {
-                Text(
-                    stringResource(R.string.proximity_signal_id, signal.peerId.takeLast(6)),
-                    fontWeight = FontWeight.SemiBold,
-                )
+        Row(Modifier.padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Campaign, null, tint = AyniSemanticColors.rojo)
+            Column(Modifier.padding(start = Spacing.md)) {
+                Text(stringResource(R.string.proximity_signal_id, signal.peerId.takeLast(6)), fontWeight = FontWeight.SemiBold)
                 Text("${signalLevelText(signal.level)} · ${trendText(signal.trend)}")
             }
         }
     }
+}
+
+@Composable
+private fun PermissionRequired(modifier: Modifier, onRequest: () -> Unit) {
+    Column(
+        modifier.fillMaxSize().padding(Spacing.lg),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(Icons.Filled.BluetoothSearching, null, Modifier.size(64.dp), MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(Spacing.md))
+        Text(stringResource(R.string.proximity_permission_body), textAlign = TextAlign.Center)
+        Spacer(Modifier.height(Spacing.lg))
+        PrimaryActionButton(text = stringResource(R.string.proximity_permission_action), onClick = onRequest)
+    }
+}
+
+@Composable
+private fun sosStatusText(status: SosModeStatus): String = when (status) {
+    SosModeStatus.INACTIVE -> stringResource(R.string.proximity_sos_inactive)
+    SosModeStatus.STARTING -> stringResource(R.string.proximity_sos_starting)
+    SosModeStatus.ACTIVE -> stringResource(R.string.proximity_sos_active)
+    SosModeStatus.UNSUPPORTED -> stringResource(R.string.proximity_sos_unsupported)
+    SosModeStatus.ERROR -> stringResource(R.string.proximity_sos_error)
 }
 
 @Composable
@@ -515,39 +619,39 @@ private fun trendText(trend: ProximityTrend): String = when (trend) {
 @Composable
 private fun ProximityPulseEffect(signal: NearbySosSignal?, enabled: Boolean) {
     val haptic = LocalHapticFeedback.current
-    val tone = remember {
-        runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 65) }.getOrNull()
-    }
+    val tone = remember { runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 65) }.getOrNull() }
     DisposableEffect(tone) { onDispose { tone?.release() } }
-
     LaunchedEffect(signal?.peerId, signal?.level, enabled) {
         while (enabled && signal != null) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 90)
-            delay(
-                when (signal.level) {
-                    ProximitySignalLevel.WEAK -> 2_500L
-                    ProximitySignalLevel.MEDIUM -> 1_250L
-                    ProximitySignalLevel.STRONG -> 550L
-                },
-            )
+            delay(when (signal.level) {
+                ProximitySignalLevel.WEAK -> 2_500L
+                ProximitySignalLevel.MEDIUM -> 1_250L
+                ProximitySignalLevel.STRONG -> 550L
+            })
         }
     }
 }
 
-private fun requiredProximityPermissions(): Array<String> = buildList {
+private fun requiredPermissions(context: Context, role: ProximityRole): Array<String> = buildList {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        add(Manifest.permission.BLUETOOTH_SCAN)
-        add(Manifest.permission.BLUETOOTH_ADVERTISE)
         add(Manifest.permission.BLUETOOTH_CONNECT)
+        if (context.packageManager.hasSystemFeature("android.hardware.uwb")) {
+            add(Manifest.permission.UWB_RANGING)
+        }
+        when (role) {
+            ProximityRole.SOS -> add(Manifest.permission.BLUETOOTH_ADVERTISE)
+            ProximityRole.RESCUER -> add(Manifest.permission.BLUETOOTH_SCAN)
+        }
     }
-    add(Manifest.permission.ACCESS_FINE_LOCATION)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    if (role == ProximityRole.RESCUER) add(Manifest.permission.ACCESS_FINE_LOCATION)
+    if (role == ProximityRole.SOS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         add(Manifest.permission.POST_NOTIFICATIONS)
     }
 }.toTypedArray()
 
-private fun hasProximityPermissions(context: Context): Boolean =
-    requiredProximityPermissions().all {
+private fun hasRolePermissions(context: Context, role: ProximityRole): Boolean =
+    requiredPermissions(context, role).all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }

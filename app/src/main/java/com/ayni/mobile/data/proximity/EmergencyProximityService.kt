@@ -21,6 +21,9 @@ class EmergencyProximityService : Service() {
     @Inject
     lateinit var advertiser: BleSosAdvertiser
 
+    @Inject
+    lateinit var gattServer: GattSosServer
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -33,12 +36,14 @@ class EmergencyProximityService : Service() {
         }
 
         startAsForeground()
+        gattServer.start()
         advertiser.start()
         return START_STICKY
     }
 
     override fun onDestroy() {
         advertiser.stop()
+        gattServer.stop()
         super.onDestroy()
     }
 
@@ -103,4 +108,3 @@ class EmergencyProximityService : Service() {
         private const val NOTIFICATION_ID = 26081
     }
 }
-

@@ -19,6 +19,7 @@
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.UWB_RANGING" />
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -28,6 +29,8 @@
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <!-- UWB es una mejora oportunista; la app conserva BLE RSSI cuando no existe. -->
+    <uses-feature android:name="android.hardware.uwb" android:required="false" />
 
     <application
         android:name=".AyniApplication"

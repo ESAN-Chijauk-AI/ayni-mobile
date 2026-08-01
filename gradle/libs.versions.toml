@@ -1,5 +1,5 @@
 [versions]
-agp = "8.7.3"
+agp = "8.9.1"
 kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
 coreKtx = "1.15.0"
@@ -17,6 +17,7 @@ kotlinxSerialization = "1.7.3"
 mediapipeTasksGenai = "0.10.35"
 room = "2.6.1"
 junit = "4.13.2"
+coreUwb = "1.0.0"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -72,3 +73,4 @@ mediapipe-tasks-genai = { group = "com.google.mediapipe", name = "tasks-genai", 
 # no en tasks-genai — hay que declararlo explícito aunque tasks-genai lo referencie.
 mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipeTasksGenai" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+core-uwb = { group = "androidx.core.uwb", name = "uwb", version.ref = "coreUwb" }
