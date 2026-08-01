@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Sos
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,19 +38,20 @@ import com.ayni.mobile.ui.theme.AyniPrimaryFixed
 import com.ayni.mobile.ui.theme.AyniSecondary
 import com.ayni.mobile.ui.theme.AyniSurfaceContainerLowest
 
-enum class AyniTab { SOS, MEDICAL, STRUCTURAL, PROXIMITY }
+enum class AyniTab { SOS, MEDICAL, STRUCTURAL, IOT, PROXIMITY }
 
-/** Rutas visibles con bottom nav y a qué tab corresponden (4 tabs: Inicio/Médico/Estructura/Proximidad). */
+/** Rutas principales visibles: Inicio, Médico, Estructura, IoT y Proximidad. */
 fun routeToTab(route: String?): AyniTab? = when (route) {
     AyniDestinations.HOME -> AyniTab.SOS
     AyniDestinations.MEDICAL_GRAPH, AyniDestinations.MEDICAL_INPUT, AyniDestinations.MEDICAL_RESULT -> AyniTab.MEDICAL
     AyniDestinations.STRUCTURAL_GRAPH, AyniDestinations.STRUCTURAL_CAPTURE, AyniDestinations.STRUCTURAL_RESULT -> AyniTab.STRUCTURAL
+    AyniDestinations.MONITORING -> AyniTab.IOT
     AyniDestinations.PROXIMITY -> AyniTab.PROXIMITY
     else -> null
 }
 
 /**
- * Barra flotante glassmorphic de 4 tabs: Inicio (SOS) / Médico / Estructura / Proximidad.
+ * Barra flotante glassmorphic de 5 tabs: Inicio / Médico / Estructura / IoT / Proximidad.
  * Sin blur real (minSdk 26, RenderEffect pediría API 31+) — se aproxima con superficie
  * semitransparente + sombra. `windowInsetsPadding(WindowInsets.navigationBars)` evita que
  * la barra del sistema (gestos o 3 botones) la tape.
@@ -60,6 +62,7 @@ fun AyniBottomNav(
     onSosClick: () -> Unit,
     onMedicalClick: () -> Unit,
     onStructuralClick: () -> Unit,
+    onIotClick: () -> Unit,
     onProximityClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -74,7 +77,7 @@ fun AyniBottomNav(
         shadowElevation = 8.dp,
         border = androidx.compose.foundation.BorderStroke(0.5.dp, AyniOutlineVariant.copy(alpha = 0.5f))
     ) {
-        Box(modifier = Modifier.padding(vertical = 10.dp, horizontal = 16.dp)) {
+        Box(modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp)) {
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
@@ -96,6 +99,12 @@ fun AyniBottomNav(
                     icon = Icons.Filled.PhotoCamera,
                     isSelected = selected == AyniTab.STRUCTURAL,
                     onClick = onStructuralClick
+                )
+                BottomNavItem(
+                    label = stringResource(R.string.nav_tab_iot),
+                    icon = Icons.Filled.Sensors,
+                    isSelected = selected == AyniTab.IOT,
+                    onClick = onIotClick
                 )
                 BottomNavItem(
                     label = stringResource(R.string.nav_tab_proximity),
@@ -131,7 +140,7 @@ private fun BottomNavItem(
             color = if (isSelected) AyniPrimaryFixed.copy(alpha = 0.4f) else androidx.compose.ui.graphics.Color.Transparent
         ) {
             Box(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(imageVector = icon, contentDescription = null, tint = tint)

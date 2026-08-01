@@ -92,7 +92,8 @@ fun AyniNavHost(
                 HomeScreen(
                     onDisclaimerClick = { navController.navigate(AyniDestinations.DISCLAIMER) },
                     onMedicalClick = { navController.navigate(AyniDestinations.MEDICAL_GRAPH) },
-                    onStructuralClick = { navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) { launchSingleTop = true } }
+                    onStructuralClick = { navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) { launchSingleTop = true } },
+                    onMonitoringClick = { navController.navigate(AyniDestinations.MONITORING) { launchSingleTop = true } }
                 )
             }
 
@@ -181,6 +182,9 @@ fun AyniNavHost(
                 },
                 onStructuralClick = {
                     navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) { launchSingleTop = true }
+                },
+                onIotClick = {
+                    navController.navigate(AyniDestinations.MONITORING) { launchSingleTop = true }
                 },
                 onProximityClick = {
                     navController.navigate(AyniDestinations.PROXIMITY) { launchSingleTop = true }

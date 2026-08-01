@@ -107,6 +107,7 @@ import com.ayni.mobile.ui.iot.components.SectionCard
 import com.ayni.mobile.ui.iot.components.SectionTitle
 import com.ayni.mobile.ui.iot.components.SensorOrientationView
 import com.ayni.mobile.ui.iot.components.StatusPill
+import com.ayni.mobile.ui.components.BottomNavClearance
 import kotlin.math.abs
 
 private val REQUIRED_BLE_PERMISSIONS = arrayOf(
@@ -305,7 +306,8 @@ fun MonitoringScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .padding(BottomNavClearance),
         ) {
             val tabLabels = listOf(
                 stringResource(R.string.monitoring_tab_measure),

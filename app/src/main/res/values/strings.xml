@@ -108,6 +108,7 @@
     <string name="home_sos_content_description">Botón SOS. Mantén presionado 3 segundos para activar o detener la baliza de auxilio por Bluetooth</string>
     <string name="home_action_medical">Apoyo Médico</string>
     <string name="home_action_structural">Analizar Estructura</string>
+    <string name="home_action_iot">Monitoreo IoT</string>
 
     <!-- Estructura: accesos secundarios al subsistema IoT -->
     <string name="structural_sensor_status_link">Estado del sensor (triage)</string>
@@ -170,10 +171,11 @@
     <!-- ===================== Subsistema IoT (migrado de ProtoEstados) ===================== -->
     <string name="nav_monitoring">Monitoreo</string>
 
-    <!-- Bottom nav, 4 tabs: Inicio (SOS) / Médico / Estructura / Proximidad -->
+    <!-- Bottom nav: Inicio / Médico / Estructura / IoT / Proximidad -->
     <string name="nav_tab_sos">Inicio</string>
     <string name="nav_tab_medical">Médico</string>
     <string name="nav_tab_structural">Estructura</string>
+    <string name="nav_tab_iot">IoT</string>
     <string name="nav_tab_proximity">Proximidad</string>
 
     <!-- Comprobación de sensores en reposo. Sirve para verificar que el IMU

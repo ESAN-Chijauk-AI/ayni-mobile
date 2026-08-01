@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -89,6 +90,7 @@ fun HomeScreen(
     onDisclaimerClick: () -> Unit,
     onMedicalClick: () -> Unit,
     onStructuralClick: () -> Unit,
+    onMonitoringClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -192,6 +194,12 @@ fun HomeScreen(
                     icon = Icons.Filled.CropFree,
                     modifier = Modifier.weight(1f),
                     onClick = onStructuralClick
+                )
+                SecondaryActionCard(
+                    label = stringResource(R.string.home_action_iot),
+                    icon = Icons.Filled.Sensors,
+                    modifier = Modifier.weight(1f),
+                    onClick = onMonitoringClick
                 )
             }
         }
