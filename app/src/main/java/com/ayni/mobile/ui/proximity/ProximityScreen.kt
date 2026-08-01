@@ -3,8 +3,6 @@ package com.ayni.mobile.ui.proximity
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioManager
-import android.media.ToneGenerator
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -52,6 +50,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,10 +79,13 @@ import com.ayni.mobile.domain.proximity.ProximityTrend
 import com.ayni.mobile.domain.proximity.RangingTechnology
 import com.ayni.mobile.domain.proximity.SosModeStatus
 import com.ayni.mobile.domain.proximity.UwbRangingStatus
+import com.ayni.mobile.domain.proximity.proximityPulseCue
 import com.ayni.mobile.ui.components.PrimaryActionButton
 import com.ayni.mobile.ui.theme.AyniSemanticColors
 import com.ayni.mobile.ui.theme.Spacing
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.min
 
 @Composable
@@ -128,6 +130,9 @@ private fun ProximityScreen(
 
     ProximityPulseEffect(
         signal = state.selectedSignal,
+        distanceMeters = state.connection.distanceMeters.takeIf {
+            state.connection.peerId == state.selectedPeerId
+        },
         enabled = state.role == ProximityRole.RESCUER && pulseEnabled &&
             state.scanStatus == ProximityScanStatus.SCANNING && !state.signalLost,
     )
@@ -617,19 +622,35 @@ private fun trendText(trend: ProximityTrend): String = when (trend) {
 }
 
 @Composable
-private fun ProximityPulseEffect(signal: NearbySosSignal?, enabled: Boolean) {
+private fun ProximityPulseEffect(
+    signal: NearbySosSignal?,
+    distanceMeters: Float?,
+    enabled: Boolean,
+) {
     val haptic = LocalHapticFeedback.current
-    val tone = remember { runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 65) }.getOrNull() }
-    DisposableEffect(tone) { onDispose { tone?.release() } }
-    LaunchedEffect(signal?.peerId, signal?.level, enabled) {
-        while (enabled && signal != null) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 90)
-            delay(when (signal.level) {
-                ProximitySignalLevel.WEAK -> 2_500L
-                ProximitySignalLevel.MEDIUM -> 1_250L
-                ProximitySignalLevel.STRONG -> 550L
-            })
+    val beepPlayer = remember { MediaProximityBeepPlayer() }
+    val currentSignal by rememberUpdatedState(signal)
+    val currentDistance by rememberUpdatedState(distanceMeters)
+    DisposableEffect(beepPlayer) { onDispose(beepPlayer::release) }
+
+    LaunchedEffect(signal?.peerId, enabled) {
+        var pulseIndex = 0
+        while (enabled) {
+            val signalSnapshot = currentSignal ?: break
+            val cue = proximityPulseCue(
+                smoothedRssi = signalSnapshot.smoothedRssi,
+                distanceMeters = currentDistance,
+            )
+            // Cerca, el audio puede llegar a 6-7 pulsos/s; se limita sólo la vibración
+            // para no convertirla en un zumbido continuo.
+            if (cue.closeness < 0.78 || pulseIndex % 3 == 0) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            withContext(Dispatchers.Default) {
+                beepPlayer.beep(cue.toneFrequencyHz, cue.toneDurationMillis)
+            }
+            pulseIndex++
+            delay(cue.intervalMillis)
         }
     }
 }
