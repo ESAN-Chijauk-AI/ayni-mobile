@@ -2,7 +2,6 @@ package com.ayni.mobile.ui.structural
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayni.mobile.data.local.LastStructuralReportState
 import com.ayni.mobile.domain.model.SensorReading
 import com.ayni.mobile.domain.model.StructuralResult
 import com.ayni.mobile.domain.repository.SensorRepository
@@ -26,8 +25,7 @@ private const val WAVEFORM_BUFFER_SIZE = 60 // ~5s a 12Hz, suficiente para el re
 @HiltViewModel
 class StructuralViewModel @Inject constructor(
     private val analyzeStructureUseCase: AnalyzeStructureUseCase,
-    private val sensorRepository: SensorRepository,
-    private val lastStructuralReportState: LastStructuralReportState
+    private val sensorRepository: SensorRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<StructuralUiState>(StructuralUiState.Capturing)
@@ -60,7 +58,6 @@ class StructuralViewModel @Inject constructor(
                 analyzeStructureUseCase(imageBytes, lastReading)
             }.onSuccess { result ->
                 _uiState.value = StructuralUiState.Result(result)
-                lastStructuralReportState.update(result, imageBytes)
             }.onFailure {
                 // AnalyzeStructureUseCase/GemmaAiRepository ya resuelven a un fallback
                 // seguro internamente; esta rama solo cubre fallos verdaderamente

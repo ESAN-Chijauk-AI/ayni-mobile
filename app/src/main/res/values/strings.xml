@@ -2,6 +2,11 @@
 <resources>
     <string name="app_name">Ayni</string>
 
+    <!-- Splash inicial (~5s o toca para saltar) -->
+    <string name="splash_tagline">Ayuda de emergencia. Funciona sin conexión, siempre a la mano.</string>
+    <string name="splash_content_description">Ayni — cargando</string>
+    <string name="splash_skip_hint">Toca para continuar</string>
+
     <!-- Disclaimer / seguridad de contenido (spec §7) -->
     <string name="disclaimer_banner_text">Ayni es ayuda de emergencia. No reemplaza a profesionales.</string>
     <string name="disclaimer_banner_action">Ver más</string>
@@ -10,6 +15,7 @@
     <string name="ai_status_warming_up">Preparando IA…</string>
     <string name="ai_status_ready">IA lista — sin conexión, por diseño</string>
     <string name="ai_status_model_missing">Modelo IA no encontrado</string>
+    <string name="ai_status_model_missing_actionable">Sin modelo IA — toca para elegirlo</string>
     <string name="home_model_missing_body">Falta el modelo de IA. Elige el archivo .litertlm desde tu teléfono — no sale de tu dispositivo.</string>
     <string name="home_model_missing_action">Elegir archivo del modelo</string>
     <string name="home_model_importing">Copiando modelo…</string>
@@ -30,9 +36,6 @@
     <string name="home_sensor_disconnected">Sensor desconectado — toca para ver estado</string>
 
     <!-- SOS y detección de proximidad offline -->
-    <string name="home_mode_proximity">SOS / BUSCAR</string>
-    <string name="home_mode_proximity_description">Emite una señal de auxilio o busca teléfonos Ayni cercanos</string>
-    <string name="tools_proximity_link">Red de proximidad (SOS por Bluetooth)</string>
     <string name="proximity_title">SOS y búsqueda</string>
     <string name="proximity_safety_notice">Herramienta de apoyo: la señal puede variar por concreto, metal, cuerpos y orientación. No reemplaza procedimientos profesionales de búsqueda y rescate.</string>
     <string name="proximity_sos_mode">Necesito ayuda</string>
@@ -74,26 +77,20 @@
     <string name="proximity_notification_title">SOS de Ayni activo</string>
     <string name="proximity_notification_body">Tu teléfono está emitiendo una señal de auxilio por Bluetooth.</string>
 
-    <!-- Home/SOS (rediseño Stitch) -->
-    <string name="home_sos_label">SOS</string>
-    <string name="home_sos_hold_label">MANTENER 3 SEGUNDOS</string>
-    <string name="home_sos_content_description">Botón SOS. Mantén presionado 3 segundos para abrir el marcador con el 911</string>
-    <string name="home_action_trapped">Estoy Atrapado</string>
-    <string name="home_action_send_location">Enviar Ubicación</string>
-    <string name="home_emergency_contacts_title">Contactos de Emergencia</string>
-    <string name="home_contact_911_subtitle">Emergencia Nacional</string>
-    <string name="home_contact_ice_title">Contacto ICE</string>
-    <string name="home_contact_ice_subtitle">Supervisor de Turno</string>
-    <string name="action_not_implemented">Todavía no está implementado — próximamente</string>
+    <!-- Home/SOS: el botón SOS activa/desactiva la baliza BLE de proximidad -->
+    <string name="home_sos_hold_activate">MANTENER 3 SEGUNDOS PARA ACTIVAR</string>
+    <string name="home_sos_hold_deactivate">MANTENER 3 SEGUNDOS PARA DETENER</string>
+    <string name="home_sos_inactive_caption">SOS</string>
+    <string name="home_sos_starting_caption">ACTIVANDO…</string>
+    <string name="home_sos_active_caption">ACTIVO</string>
+    <string name="home_sos_unsupported_caption">NO DISPONIBLE</string>
+    <string name="home_sos_error_caption">ERROR</string>
+    <string name="home_sos_content_description">Botón SOS. Mantén presionado 3 segundos para activar o detener la baliza de auxilio por Bluetooth</string>
+    <string name="home_action_medical">Apoyo Médico</string>
+    <string name="home_action_structural">Analizar Estructura</string>
 
-    <!-- Herramientas (rediseño Stitch) -->
-    <string name="tools_title">Herramientas</string>
-    <string name="tools_flashlight">Linterna</string>
-    <string name="tools_sound_signal">Señal Sonora</string>
-    <string name="tools_compass">Brújula</string>
-    <string name="tools_first_aid">Primeros Auxilios</string>
-    <string name="tools_activate_sos">ACTIVAR SOS</string>
-    <string name="tools_sensor_status_link">Estado del sensor (triage)</string>
+    <!-- Estructura: accesos secundarios al subsistema IoT -->
+    <string name="structural_sensor_status_link">Estado del sensor (triage)</string>
 
     <!-- Triage estructural (F2) -->
     <string name="structural_camera_permission_needed">Ayni necesita la cámara para ver la grieta. Activa el permiso para continuar.</string>
@@ -118,8 +115,6 @@
     <string name="structural_report_observations_title">Lista de Observaciones</string>
     <string name="structural_report_share">Compartir Reporte</string>
 
-    <string name="reports_empty_title">Aún no hay reportes</string>
-    <string name="reports_empty_body">Ve a Inspección y captura una grieta para generar tu primer reporte estructural.</string>
     <string name="structural_capture_action_description">Toma una foto de la grieta para analizarla</string>
     <string name="structural_result_no_sensor">Sin datos de sensor — analizando solo con la foto</string>
     <string name="structural_result_simulate_aftershock">Simular réplica — DEMO</string>
@@ -155,11 +150,11 @@
     <!-- ===================== Subsistema IoT (migrado de ProtoEstados) ===================== -->
     <string name="nav_monitoring">Monitoreo</string>
 
-    <!-- Bottom nav 4 tabs (rediseño Stitch) -->
-    <string name="nav_tab_sos">SOS</string>
-    <string name="nav_tab_tools">Herramientas</string>
-    <string name="nav_tab_inspection">Inspección</string>
-    <string name="nav_tab_reports">Reportes</string>
+    <!-- Bottom nav, 4 tabs: Inicio (SOS) / Médico / Estructura / Proximidad -->
+    <string name="nav_tab_sos">Inicio</string>
+    <string name="nav_tab_medical">Médico</string>
+    <string name="nav_tab_structural">Estructura</string>
+    <string name="nav_tab_proximity">Proximidad</string>
 
     <!-- Comprobación de sensores en reposo. Sirve para verificar que el IMU
          responde antes de confiar en una medición. -->

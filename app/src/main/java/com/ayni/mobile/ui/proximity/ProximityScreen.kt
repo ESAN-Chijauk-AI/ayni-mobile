@@ -26,7 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BluetoothSearching
+import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -230,7 +230,7 @@ private fun PermissionRequired(modifier: Modifier, onRequest: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
-            Icons.Filled.BluetoothSearching,
+            Icons.AutoMirrored.Filled.BluetoothSearching,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary,
@@ -535,7 +535,7 @@ private fun ProximityPulseEffect(signal: NearbySosSignal?, enabled: Boolean) {
     }
 }
 
-private fun requiredProximityPermissions(): Array<String> = buildList {
+internal fun requiredProximityPermissions(): Array<String> = buildList {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         add(Manifest.permission.BLUETOOTH_SCAN)
         add(Manifest.permission.BLUETOOTH_ADVERTISE)
@@ -547,7 +547,7 @@ private fun requiredProximityPermissions(): Array<String> = buildList {
     }
 }.toTypedArray()
 
-private fun hasProximityPermissions(context: Context): Boolean =
+internal fun hasProximityPermissions(context: Context): Boolean =
     requiredProximityPermissions().all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }

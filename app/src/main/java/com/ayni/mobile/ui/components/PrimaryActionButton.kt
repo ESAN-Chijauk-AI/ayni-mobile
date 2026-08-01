@@ -11,12 +11,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.ayni.mobile.ui.theme.AyniOnPrimaryContainer
+import com.ayni.mobile.ui.theme.AyniPrimaryContainer
 import com.ayni.mobile.ui.theme.AyniShapes
 import com.ayni.mobile.ui.theme.MinTapTarget
 
 /**
  * Botón grande genérico (>=56dp, §6.1) para acciones primarias en la mitad inferior de
- * la pantalla (thumb zone): capturar, enviar, "nuevo análisis", etc.
+ * la pantalla (thumb zone): capturar, enviar, "nuevo análisis", etc. Color por defecto
+ * es el ámbar claro `AyniPrimaryContainer` (el acento de CTAs del sistema de diseño, ver
+ * Color.kt) — no `colorScheme.primary`, que es el ámbar oscuro reservado para texto/íconos
+ * sobre superficie clara y se veía como un botón apagado.
  */
 @Composable
 fun PrimaryActionButton(
@@ -25,7 +30,10 @@ fun PrimaryActionButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     contentDescription: String? = null,
-    colors: ButtonColors = ButtonDefaults.buttonColors()
+    colors: ButtonColors = ButtonDefaults.buttonColors(
+        containerColor = AyniPrimaryContainer,
+        contentColor = AyniOnPrimaryContainer
+    )
 ) {
     val descriptionText = contentDescription
     val describedModifier = if (descriptionText != null) {

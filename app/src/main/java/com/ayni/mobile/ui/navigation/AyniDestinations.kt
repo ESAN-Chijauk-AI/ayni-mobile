@@ -7,6 +7,7 @@ package com.ayni.mobile.ui.navigation
  * pierde al navegar ni hace falta serializar el StructuralResult/MedicalResult a argumentos.
  */
 object AyniDestinations {
+    const val SPLASH = "splash"
     const val DISCLAIMER = "disclaimer"
     const val HOME = "home"
 
@@ -22,12 +23,6 @@ object AyniDestinations {
     const val PROXIMITY = "proximity"
 
     // Monitoreo estructural del nodo ESP32 (subsistema IoT migrado de ProtoEstados).
+    // Ya no cuelga de Herramientas (eliminado) — se entra desde Estructura.
     const val MONITORING = "monitoring"
-
-    // Rediseño Stitch (stitch_remix_of_ayni_mobile_emergency_response): Herramientas y
-    // Reportes son destinos top-level propios (no anidados en STRUCTURAL_GRAPH) para que
-    // la bottom nav pueda saltar directo a cualquiera de los 4 tabs sin depender de haber
-    // pasado antes por el flujo de captura.
-    const val TOOLS = "tools"
-    const val REPORTS = "reports"
 }

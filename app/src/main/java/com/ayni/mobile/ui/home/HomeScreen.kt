@@ -1,10 +1,13 @@
 package com.ayni.mobile.ui.home
 
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -16,21 +19,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.PanTool
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Sos
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.CropFree
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -55,9 +59,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ayni.mobile.R
+import com.ayni.mobile.domain.proximity.SosModeStatus
 import com.ayni.mobile.ui.components.AiStatus
 import com.ayni.mobile.ui.components.BottomNavClearance
 import com.ayni.mobile.ui.components.OfflineStatusBadge
+import com.ayni.mobile.ui.proximity.hasProximityPermissions
+import com.ayni.mobile.ui.proximity.requiredProximityPermissions
 import com.ayni.mobile.ui.theme.AyniBrandSoft
 import com.ayni.mobile.ui.theme.AyniDangerRed
 import com.ayni.mobile.ui.theme.AyniHairline
@@ -69,19 +76,18 @@ import com.ayni.mobile.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
 /**
- * F1 rediseñado (stitch_remix_of_ayni_mobile_emergency_response/inicio_de_emergencia_sos):
- * Home pasa de "elegir modo" a un centro de **SOS**. Los modos ESTRUCTURA/MÉDICO viven
- * ahora detrás de la pestaña Inspección y de la tarjeta "Primeros Auxilios" en
- * Herramientas (ver AyniBottomNav/ToolsScreen) — Home es la superficie de emergencia.
- *
- * Real: mantener 3s el botón SOS abre el marcador con el 911 (Intent.ACTION_DIAL, no
- * requiere permiso porque no auto-llama). "Estoy Atrapado"/"Enviar Ubicación" y el
- * contacto ICE quedan como UI sin backend todavía (no hay servicio de ubicación/SMS
- * implementado hoy) — se lo dice explícito al usuario en vez de simular que funcionan.
+ * F1: Home es el centro de **SOS**. El botón circular ya no marca al 911 — mantener 3s
+ * activa/desactiva la baliza BLE del sistema de proximidad (mismo
+ * ManageEmergencyProximityUseCase que usa la pantalla Proximidad, ver
+ * HomeViewModel.onSosHoldComplete). Los accesos rápidos de abajo llevan a los dos módulos
+ * reales de triage: Médico (MEDICAL_GRAPH) y Estructura (STRUCTURAL_GRAPH) — ya no hay
+ * "Estoy Atrapado"/"Enviar Ubicación"/Contactos de Emergencia (eran UI sin backend).
  */
 @Composable
 fun HomeScreen(
     onDisclaimerClick: () -> Unit,
+    onMedicalClick: () -> Unit,
+    onStructuralClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -91,30 +97,32 @@ fun HomeScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let(viewModel::onModelFileSelected) }
 
-    val notImplementedMessage = stringResource(R.string.action_not_implemented)
+    var sosPermissionsGranted by remember { mutableStateOf(hasProximityPermissions(context)) }
+    val sosPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { sosPermissionsGranted = hasProximityPermissions(context) }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        val aiStatus = when {
+            uiState.aiReady -> AiStatus.READY
+            !uiState.modelFilePresent -> AiStatus.MODEL_MISSING
+            else -> AiStatus.WARMING_UP
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Spacing.marginPage, vertical = Spacing.md),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(horizontal = Spacing.marginPage, vertical = Spacing.md)
         ) {
             Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
-            OfflineStatusBadge(
-                aiStatus = when {
-                    uiState.aiReady -> AiStatus.READY
-                    !uiState.modelFilePresent -> AiStatus.MODEL_MISSING
-                    else -> AiStatus.WARMING_UP
-                }
-            )
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = Spacing.marginPage)
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(BottomNavClearance),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -134,15 +142,29 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(modifier = Modifier.height(Spacing.xl))
+                    Spacer(modifier = Modifier.height(Spacing.lg))
+                    OfflineStatusBadge(
+                        aiStatus = aiStatus,
+                        onPickModel = { modelPickerLauncher.launch(arrayOf("*/*")) }
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.lg))
                     SosButton(
-                        onActivate = {
-                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:911"))
-                            runCatching { context.startActivity(intent) }
+                        status = uiState.sosStatus,
+                        onHoldComplete = {
+                            if (sosPermissionsGranted) {
+                                viewModel.onSosHoldComplete()
+                            } else {
+                                sosPermissionLauncher.launch(requiredProximityPermissions())
+                            }
                         }
                     )
                     Text(
-                        text = stringResource(R.string.home_sos_hold_label),
+                        text = stringResource(
+                            when (uiState.sosStatus) {
+                                SosModeStatus.ACTIVE, SosModeStatus.STARTING -> R.string.home_sos_hold_deactivate
+                                else -> R.string.home_sos_hold_activate
+                            }
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = Spacing.md)
@@ -150,53 +172,24 @@ fun HomeScreen(
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    SecondaryActionCard(
-                        label = stringResource(R.string.home_action_trapped),
-                        icon = Icons.Filled.PanTool,
-                        modifier = Modifier.weight(1f),
-                        onClick = { Toast.makeText(context, notImplementedMessage, Toast.LENGTH_SHORT).show() }
-                    )
-                    SecondaryActionCard(
-                        label = stringResource(R.string.home_action_send_location),
-                        icon = Icons.Filled.LocationOn,
-                        modifier = Modifier.weight(1f),
-                        onClick = { Toast.makeText(context, notImplementedMessage, Toast.LENGTH_SHORT).show() }
-                    )
-                }
-
-                Text(
-                    text = stringResource(R.string.home_emergency_contacts_title),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = Spacing.sm)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = Spacing.lg)
+            ) {
+                SecondaryActionCard(
+                    label = stringResource(R.string.home_action_medical),
+                    icon = Icons.Filled.MedicalServices,
+                    modifier = Modifier.weight(1f),
+                    onClick = onMedicalClick
                 )
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = AyniShapes.large,
-                    color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    border = BorderStroke(0.5.dp, AyniHairline)
-                ) {
-                    Column {
-                        EmergencyContactRow(
-                            icon = Icons.Filled.Shield,
-                            title = "911",
-                            subtitle = stringResource(R.string.home_contact_911_subtitle),
-                            onCall = {
-                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:911"))
-                                runCatching { context.startActivity(intent) }
-                            }
-                        )
-                        androidx.compose.material3.HorizontalDivider(color = AyniHairline, thickness = 0.5.dp)
-                        EmergencyContactRow(
-                            icon = Icons.Filled.Badge,
-                            title = stringResource(R.string.home_contact_ice_title),
-                            subtitle = stringResource(R.string.home_contact_ice_subtitle),
-                            onCall = { Toast.makeText(context, notImplementedMessage, Toast.LENGTH_SHORT).show() }
-                        )
-                    }
-                }
+                SecondaryActionCard(
+                    label = stringResource(R.string.home_action_structural),
+                    icon = Icons.Filled.CropFree,
+                    modifier = Modifier.weight(1f),
+                    onClick = onStructuralClick
+                )
             }
         }
     }
@@ -251,12 +244,27 @@ private fun ModelStatusBanner(
     }
 }
 
-/** Botón SOS circular. Mantener 3s dispara onActivate (marcador al 911). */
+/**
+ * Botón SOS circular. Mantener 3s dispara onHoldComplete, que en HomeViewModel alterna
+ * activar/desactivar la baliza BLE según `status` (ver ManageEmergencyProximityUseCase).
+ * El ícono es de transmisión (`Campaign`), no el pictograma "SOS" — refleja lo que el
+ * botón realmente hace hoy (emitir una baliza Bluetooth), no una llamada de emergencia.
+ * Con `status == ACTIVE` se ve un anillo tipo radar expandiéndose, para que "está
+ * transmitiendo" se lea en el UI y no solo en el texto de abajo.
+ */
 @Composable
-private fun SosButton(onActivate: () -> Unit) {
+private fun SosButton(status: SosModeStatus, onHoldComplete: () -> Unit) {
     val haptics = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
     var pressProgress by remember { mutableFloatStateOf(0f) }
+
+    val radarTransition = rememberInfiniteTransition(label = "sos-radar")
+    val radarProgress by radarTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
+        label = "radar-progress"
+    )
 
     Box(
         modifier = Modifier
@@ -271,7 +279,7 @@ private fun SosButton(onActivate: () -> Unit) {
                             kotlinx.coroutines.delay(3000L / steps)
                         }
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onActivate()
+                        onHoldComplete()
                     }
                     waitForUpOrCancellation()
                     job.cancel()
@@ -282,6 +290,14 @@ private fun SosButton(onActivate: () -> Unit) {
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(color = AyniBrandSoft)
+            if (status == SosModeStatus.ACTIVE) {
+                val maxRadius = size.minDimension / 2f
+                drawCircle(
+                    color = AyniDangerRed.copy(alpha = (1f - radarProgress) * 0.45f),
+                    radius = maxRadius * (0.55f + radarProgress * 0.45f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                )
+            }
             if (pressProgress > 0f) {
                 drawArc(
                     color = AyniPrimaryContainer,
@@ -300,16 +316,33 @@ private fun SosButton(onActivate: () -> Unit) {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
-                    imageVector = Icons.Filled.Sos,
+                    imageVector = Icons.Filled.Campaign,
                     contentDescription = stringResource(R.string.home_sos_content_description),
                     tint = Color.White,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(56.dp)
                 )
+                val captionRes = when (status) {
+                    SosModeStatus.STARTING -> R.string.home_sos_starting_caption
+                    SosModeStatus.ACTIVE -> R.string.home_sos_active_caption
+                    SosModeStatus.UNSUPPORTED -> R.string.home_sos_unsupported_caption
+                    SosModeStatus.ERROR -> R.string.home_sos_error_caption
+                    SosModeStatus.INACTIVE -> R.string.home_sos_inactive_caption
+                }
                 Text(
-                    text = stringResource(R.string.home_sos_label),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White
+                    text = stringResource(captionRes),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
+                    modifier = Modifier.padding(top = 2.dp)
                 )
+                if (status == SosModeStatus.STARTING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .padding(top = Spacing.xs)
+                            .size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                }
             }
         }
     }
@@ -348,47 +381,6 @@ private fun SecondaryActionCard(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.padding(top = Spacing.sm, start = Spacing.xs, end = Spacing.xs)
             )
-        }
-    }
-}
-
-@Composable
-private fun EmergencyContactRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    onCall: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Column(modifier = Modifier.padding(start = Spacing.md)) {
-                Text(text = title, style = MaterialTheme.typography.titleLarge)
-                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        Surface(
-            onClick = onCall,
-            shape = CircleShape,
-            color = AyniInputBackground,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(imageVector = Icons.Filled.Call, contentDescription = title, tint = AyniPrimaryContainer)
-            }
         }
     }
 }

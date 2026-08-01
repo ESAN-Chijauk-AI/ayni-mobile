@@ -15,6 +15,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -79,7 +81,9 @@ import java.io.File
 fun StructuralCaptureScreen(
     parentEntry: NavBackStackEntry,
     onResultReady: () -> Unit,
-    onClose: () -> Unit = {}
+    onClose: () -> Unit = {},
+    onSensorStatusClick: () -> Unit = {},
+    onMonitoringClick: () -> Unit = {}
 ) {
     val viewModel: StructuralViewModel = hiltViewModel(parentEntry)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -116,7 +120,9 @@ fun StructuralCaptureScreen(
                 enabled = uiState is StructuralUiState.Capturing,
                 sensorConnected = sensorConnected,
                 magnitudes = magnitudes,
-                onClose = onClose
+                onClose = onClose,
+                onSensorStatusClick = onSensorStatusClick,
+                onMonitoringClick = onMonitoringClick
             )
         } else {
             Column(
@@ -176,7 +182,9 @@ private fun CameraPreviewWithCapture(
     enabled: Boolean,
     sensorConnected: Boolean,
     magnitudes: List<Float>,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onSensorStatusClick: () -> Unit,
+    onMonitoringClick: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -260,7 +268,10 @@ private fun CameraPreviewWithCapture(
                     modifier = Modifier.padding(horizontal = Spacing.md, vertical = 6.dp)
                 )
             }
-            RoundIconButton(icon = Icons.Filled.FlashOn, contentDescription = null, onClick = {})
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                RoundIconButton(icon = Icons.Filled.Sensors, contentDescription = stringResource(R.string.nav_monitoring), onClick = onMonitoringClick)
+                RoundIconButton(icon = Icons.Filled.FlashOn, contentDescription = null, onClick = {})
+            }
         }
 
         // Retícula central (guía de encuadre, decorativa — la foto real se manda entera).
@@ -288,6 +299,7 @@ private fun CameraPreviewWithCapture(
         }
 
         // Panel inferior frosted: readout real de sensor + control de severidad (visual) + captura.
+        val sensorStatusDescription = stringResource(R.string.structural_sensor_status_link)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -295,11 +307,18 @@ private fun CameraPreviewWithCapture(
                 .background(Color.Black.copy(alpha = 0.55f))
                 .padding(horizontal = Spacing.lg, vertical = Spacing.lg)
         ) {
-            SensorSignatureReadout(
-                magnitudes = magnitudes,
-                connected = sensorConnected,
-                isSimulated = true
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onSensorStatusClick)
+                    .semantics { contentDescription = sensorStatusDescription }
+            ) {
+                SensorSignatureReadout(
+                    magnitudes = magnitudes,
+                    connected = sensorConnected,
+                    isSimulated = true
+                )
+            }
 
             Spacer(modifier = Modifier.height(Spacing.md))
             SeveritySegmentedControlPlaceholder()

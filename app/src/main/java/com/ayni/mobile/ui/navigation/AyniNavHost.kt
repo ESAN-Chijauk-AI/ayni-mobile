@@ -21,12 +21,11 @@ import com.ayni.mobile.ui.medical.MedicalInputScreen
 import com.ayni.mobile.ui.medical.MedicalResultScreen
 import com.ayni.mobile.ui.onboarding.DisclaimerScreen
 import com.ayni.mobile.ui.onboarding.DisclaimerViewModel
+import com.ayni.mobile.ui.onboarding.SplashScreen
 import com.ayni.mobile.ui.proximity.ProximityRoute
 import com.ayni.mobile.ui.sensor.SensorStatusScreen
-import com.ayni.mobile.ui.structural.ReportsScreen
 import com.ayni.mobile.ui.structural.StructuralCaptureScreen
 import com.ayni.mobile.ui.structural.StructuralResultScreen
-import com.ayni.mobile.ui.tools.ToolsScreen
 
 @Composable
 fun AyniNavHost(
@@ -37,7 +36,7 @@ fun AyniNavHost(
     // construcción del ViewModel, no reactivo — no necesita serlo: una vez que el
     // usuario avanza, la navegación posterior ya no depende de startDestination.
     val disclaimerViewModel: DisclaimerViewModel = hiltViewModel()
-    val startDestination = if (disclaimerViewModel.initiallyAcknowledged) {
+    val postSplashDestination = if (disclaimerViewModel.initiallyAcknowledged) {
         AyniDestinations.HOME
     } else {
         AyniDestinations.DISCLAIMER
@@ -46,9 +45,19 @@ fun AyniNavHost(
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
-            startDestination = startDestination,
+            startDestination = AyniDestinations.SPLASH,
             modifier = Modifier.fillMaxSize()
         ) {
+            composable(AyniDestinations.SPLASH) {
+                SplashScreen(
+                    onFinished = {
+                        navController.navigate(postSplashDestination) {
+                            popUpTo(AyniDestinations.SPLASH) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable(AyniDestinations.DISCLAIMER) {
                 DisclaimerScreen(
                     onContinue = {
@@ -80,25 +89,9 @@ fun AyniNavHost(
 
             composable(AyniDestinations.HOME) {
                 HomeScreen(
-                    onDisclaimerClick = { navController.navigate(AyniDestinations.DISCLAIMER) }
-                )
-            }
-
-            composable(AyniDestinations.TOOLS) {
-                ToolsScreen(
-                    onPrimerosAuxiliosClick = { navController.navigate(AyniDestinations.MEDICAL_GRAPH) },
-                    onSensorStatusClick = { navController.navigate(AyniDestinations.SENSOR_STATUS) },
-                    onMonitoringClick = { navController.navigate(AyniDestinations.MONITORING) },
-                    onProximityClick = { navController.navigate(AyniDestinations.PROXIMITY) }
-                )
-            }
-
-            composable(AyniDestinations.REPORTS) {
-                ReportsScreen(
-                    onNewAnalysis = {
-                        navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) { launchSingleTop = true }
-                    },
-                    onDisclaimerClick = { navController.navigate(AyniDestinations.DISCLAIMER) }
+                    onDisclaimerClick = { navController.navigate(AyniDestinations.DISCLAIMER) },
+                    onMedicalClick = { navController.navigate(AyniDestinations.MEDICAL_GRAPH) },
+                    onStructuralClick = { navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) { launchSingleTop = true } }
                 )
             }
 
@@ -115,7 +108,9 @@ fun AyniNavHost(
                         onResultReady = {
                             navController.navigate(AyniDestinations.STRUCTURAL_RESULT)
                         },
-                        onClose = { navController.popBackStack() }
+                        onClose = { navController.popBackStack() },
+                        onSensorStatusClick = { navController.navigate(AyniDestinations.SENSOR_STATUS) },
+                        onMonitoringClick = { navController.navigate(AyniDestinations.MONITORING) }
                     )
                 }
                 composable(AyniDestinations.STRUCTURAL_RESULT) {
@@ -158,9 +153,9 @@ fun AyniNavHost(
             }
         }
 
-        // Bottom nav flotante (rediseño Stitch): overlay, no Scaffold — solo visible en
-        // los 4 destinos top-level que representa (routeToTab devuelve null en el resto,
-        // p.ej. Monitoreo/Proximidad/Sensor Status/Médico, que se navegan "por encima").
+        // Bottom nav flotante: overlay, no Scaffold — solo visible en los 4 destinos
+        // top-level que representa (routeToTab devuelve null en el resto, p.ej.
+        // Monitoreo/Sensor Status, que se navegan "por encima").
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentTab = routeToTab(backStackEntry?.destination?.route)
         if (currentTab != null) {
@@ -172,14 +167,14 @@ fun AyniNavHost(
                         launchSingleTop = true
                     }
                 },
-                onToolsClick = {
-                    navController.navigate(AyniDestinations.TOOLS) { launchSingleTop = true }
+                onMedicalClick = {
+                    navController.navigate(AyniDestinations.MEDICAL_GRAPH) { launchSingleTop = true }
                 },
-                onInspectionClick = {
+                onStructuralClick = {
                     navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) { launchSingleTop = true }
                 },
-                onReportsClick = {
-                    navController.navigate(AyniDestinations.REPORTS) { launchSingleTop = true }
+                onProximityClick = {
+                    navController.navigate(AyniDestinations.PROXIMITY) { launchSingleTop = true }
                 },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )

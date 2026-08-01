@@ -5,8 +5,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayni.mobile.data.ai.ModelPaths
+import com.ayni.mobile.domain.proximity.SosModeStatus
 import com.ayni.mobile.domain.repository.AiRepository
 import com.ayni.mobile.domain.repository.SensorRepository
+import com.ayni.mobile.domain.usecase.ManageEmergencyProximityUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -25,13 +27,15 @@ data class HomeUiState(
     val sensorConnected: Boolean = false,
     val modelFilePresent: Boolean = false,
     val isImportingModel: Boolean = false,
-    val importError: Boolean = false
+    val importError: Boolean = false,
+    val sosStatus: SosModeStatus = SosModeStatus.INACTIVE
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val aiRepository: AiRepository,
     sensorRepository: SensorRepository,
+    private val proximity: ManageEmergencyProximityUseCase,
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -48,7 +52,7 @@ class HomeViewModel @Inject constructor(
         pollUntilReady()
     }
 
-    val uiState: StateFlow<HomeUiState> = combine(
+    private val engineState = combine(
         aiReady, sensorRepository.isConnected, modelFilePresent, isImportingModel, importError
     ) { ready, sensorConnected, modelPresent, importing, error ->
         HomeUiState(
@@ -58,15 +62,32 @@ class HomeViewModel @Inject constructor(
             isImportingModel = importing,
             importError = error
         )
-    }.stateIn(
+    }
+
+    val uiState: StateFlow<HomeUiState> = combine(
+        engineState, proximity.sosStatus
+    ) { state, sosStatus -> state.copy(sosStatus = sosStatus) }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeUiState(
             aiReady = aiReady.value,
             sensorConnected = false,
-            modelFilePresent = modelFilePresent.value
+            modelFilePresent = modelFilePresent.value,
+            sosStatus = proximity.sosStatus.value
         )
     )
+
+    /**
+     * El botón SOS del Home ya no marca al 911: alterna la baliza BLE del sistema de
+     * proximidad (mismo caso de uso que usa la pantalla Proximidad). Mantener 3s activa;
+     * mantener 3s de nuevo con la baliza activa la detiene.
+     */
+    fun onSosHoldComplete() {
+        when (uiState.value.sosStatus) {
+            SosModeStatus.ACTIVE, SosModeStatus.STARTING -> proximity.deactivateSos()
+            else -> proximity.activateSos()
+        }
+    }
 
     /**
      * El usuario eligió el archivo `.litertlm` con el selector de archivos del sistema

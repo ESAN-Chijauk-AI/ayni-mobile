@@ -4,14 +4,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FactCheck
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.Construction
+import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Sos
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,34 +37,36 @@ import com.ayni.mobile.ui.theme.AyniPrimaryFixed
 import com.ayni.mobile.ui.theme.AyniSecondary
 import com.ayni.mobile.ui.theme.AyniSurfaceContainerLowest
 
-enum class AyniTab { SOS, TOOLS, INSPECTION, REPORTS }
+enum class AyniTab { SOS, MEDICAL, STRUCTURAL, PROXIMITY }
 
-/** Rutas visibles con bottom nav y a qué tab corresponden (rediseño Stitch, 4 tabs). */
+/** Rutas visibles con bottom nav y a qué tab corresponden (4 tabs: Inicio/Médico/Estructura/Proximidad). */
 fun routeToTab(route: String?): AyniTab? = when (route) {
     AyniDestinations.HOME -> AyniTab.SOS
-    AyniDestinations.TOOLS -> AyniTab.TOOLS
-    AyniDestinations.STRUCTURAL_CAPTURE -> AyniTab.INSPECTION
-    AyniDestinations.STRUCTURAL_RESULT, AyniDestinations.REPORTS -> AyniTab.REPORTS
+    AyniDestinations.MEDICAL_GRAPH, AyniDestinations.MEDICAL_INPUT, AyniDestinations.MEDICAL_RESULT -> AyniTab.MEDICAL
+    AyniDestinations.STRUCTURAL_GRAPH, AyniDestinations.STRUCTURAL_CAPTURE, AyniDestinations.STRUCTURAL_RESULT -> AyniTab.STRUCTURAL
+    AyniDestinations.PROXIMITY -> AyniTab.PROXIMITY
     else -> null
 }
 
 /**
- * Barra flotante glassmorphic de 4 tabs (SOS/Herramientas/Inspección/Reportes), calco de
- * stitch_remix_of_ayni_mobile_emergency_response. Sin blur real (minSdk 26, RenderEffect
- * pediría API 31+) — se aproxima con superficie semitransparente + sombra.
+ * Barra flotante glassmorphic de 4 tabs: Inicio (SOS) / Médico / Estructura / Proximidad.
+ * Sin blur real (minSdk 26, RenderEffect pediría API 31+) — se aproxima con superficie
+ * semitransparente + sombra. `windowInsetsPadding(WindowInsets.navigationBars)` evita que
+ * la barra del sistema (gestos o 3 botones) la tape.
  */
 @Composable
 fun AyniBottomNav(
     selected: AyniTab,
     onSosClick: () -> Unit,
-    onToolsClick: () -> Unit,
-    onInspectionClick: () -> Unit,
-    onReportsClick: () -> Unit,
+    onMedicalClick: () -> Unit,
+    onStructuralClick: () -> Unit,
+    onProximityClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 22.dp)
             .widthIn(max = 500.dp)
             .fillMaxWidth(),
         shape = CircleShape,
@@ -81,22 +86,22 @@ fun AyniBottomNav(
                     onClick = onSosClick
                 )
                 BottomNavItem(
-                    label = stringResource(R.string.nav_tab_tools),
-                    icon = Icons.Filled.Construction,
-                    isSelected = selected == AyniTab.TOOLS,
-                    onClick = onToolsClick
+                    label = stringResource(R.string.nav_tab_medical),
+                    icon = Icons.Filled.MedicalServices,
+                    isSelected = selected == AyniTab.MEDICAL,
+                    onClick = onMedicalClick
                 )
                 BottomNavItem(
-                    label = stringResource(R.string.nav_tab_inspection),
-                    icon = Icons.AutoMirrored.Filled.FactCheck,
-                    isSelected = selected == AyniTab.INSPECTION,
-                    onClick = onInspectionClick
+                    label = stringResource(R.string.nav_tab_structural),
+                    icon = Icons.Filled.PhotoCamera,
+                    isSelected = selected == AyniTab.STRUCTURAL,
+                    onClick = onStructuralClick
                 )
                 BottomNavItem(
-                    label = stringResource(R.string.nav_tab_reports),
-                    icon = Icons.Filled.Analytics,
-                    isSelected = selected == AyniTab.REPORTS,
-                    onClick = onReportsClick
+                    label = stringResource(R.string.nav_tab_proximity),
+                    icon = Icons.AutoMirrored.Filled.BluetoothSearching,
+                    isSelected = selected == AyniTab.PROXIMITY,
+                    onClick = onProximityClick
                 )
             }
         }
