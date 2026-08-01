@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder: onda tipo sismógrafo, eco del elemento signature de la UI (§6.3 del spec).
+     Reemplazar por un icono de marca definitivo si hay tiempo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#4CC9F0"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M24,54 L38,54 L45,34 L55,74 L62,54 L84,54" />
+</vector>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Privacidad on-device: sin reglas de transferencia/backup para datos de la app. -->
+<data-extraction-rules>
+    <cloud-backup disableIfNoEncryptionCapability="true">
+    </cloud-backup>
+</data-extraction-rules>

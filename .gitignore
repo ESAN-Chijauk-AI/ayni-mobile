@@ -1,0 +1,39 @@
+# Gradle
+.gradle/
+build/
+app/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration (SDK path, machine-specific) — nunca se comparte
+local.properties
+
+# Android Studio / IntelliJ
+.idea/*
+!.idea/codeStyles/
+!.idea/runConfigurations/
+*.iml
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Logs
+*.log
+
+# Keystores locales (nunca commitear firmas reales de release)
+*.jks
+*.keystore
+
+# Modelo Gemma: ~0.8GB, no cabe ni debe vivir en git (ni siquiera con LFS para este
+# hackathon). Cada quien lo copia localmente según data/ai/ModelPaths.kt.
+*.litertlm
+
+# Salidas de build
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# macOS / Windows
+.DS_Store
+Thumbs.db

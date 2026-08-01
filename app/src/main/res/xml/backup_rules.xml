@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- allowBackup="false" en el manifest: nada de esta app debería salir del dispositivo,
+     tampoco vía backup. Este archivo queda vacío/no usado a propósito. -->
+<full-backup-content>
+</full-backup-content>

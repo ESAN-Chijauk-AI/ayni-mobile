@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema base solo para el splash/manifest antes de que Compose tome control.
+         El tema real (colores, tipografía) vive en ui/theme/Theme.kt (AyniTheme). -->
+    <style name="Theme.Ayni" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ayni_surface</item>
+        <item name="android:statusBarColor">@color/ayni_surface</item>
+        <item name="android:navigationBarColor">@color/ayni_surface</item>
+    </style>
+</resources>

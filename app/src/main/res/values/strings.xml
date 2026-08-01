@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ayni</string>
+
+    <!-- Disclaimer / seguridad de contenido (spec §7) -->
+    <string name="disclaimer_banner_text">Ayni es ayuda de emergencia. No reemplaza a profesionales.</string>
+    <string name="disclaimer_banner_action">Ver más</string>
+
+    <!-- Estado del motor de IA (F6 / OfflineStatusBadge) -->
+    <string name="ai_status_warming_up">Preparando IA…</string>
+    <string name="ai_status_ready">IA lista — sin conexión, por diseño</string>
+    <string name="ai_status_model_missing">Modelo IA no encontrado</string>
+
+    <!-- Readout de sensor (elemento signature, §6.3) -->
+    <string name="sensor_readout_disconnected">Sensor desconectado</string>
+    <string name="sensor_readout_simulated">Sensor simulado (demo)</string>
+    <string name="sensor_readout_live">Sensor en vivo</string>
+
+    <!-- Home (F1) -->
+    <string name="home_disclaimer_link">Antes de usar Ayni, lee esto</string>
+    <string name="home_mode_structural">ESTRUCTURA</string>
+    <string name="home_mode_structural_description">Evalúa si un edificio es seguro con una foto de la grieta</string>
+    <string name="home_mode_medical">MÉDICO</string>
+    <string name="home_mode_medical_description">Prioriza una lesión y recibe primeros auxilios inmediatos</string>
+    <string name="home_sensor_connected">Sensor conectado</string>
+    <string name="home_sensor_disconnected">Sensor desconectado — toca para ver estado</string>
+
+    <!-- Triage estructural (F2) -->
+    <string name="structural_camera_permission_needed">Ayni necesita la cámara para ver la grieta. Activa el permiso para continuar.</string>
+    <string name="structural_analyzing">Analizando…</string>
+    <string name="structural_capture_action">Capturar grieta</string>
+    <string name="structural_capture_action_description">Toma una foto de la grieta para analizarla</string>
+    <string name="structural_result_no_sensor">Sin datos de sensor — analizando solo con la foto</string>
+    <string name="structural_result_simulate_aftershock">Simular réplica — DEMO</string>
+    <string name="structural_result_new_analysis">Nuevo análisis</string>
+
+    <!-- Triage médico (F3) -->
+    <string name="medical_input_title">¿Qué lesión ves?</string>
+    <string name="medical_input_subtitle">Toca todo lo que aplique. El texto es opcional.</string>
+    <string name="medical_input_free_text_label">Describe la lesión (opcional)</string>
+    <string name="medical_input_submit">Evaluar</string>
+    <string name="medical_input_analyzing">Evaluando…</string>
+    <string name="medical_result_steps_title">Haz esto ahora:</string>
+    <string name="medical_result_no_diagnosis">Esto no es un diagnóstico. Es primeros auxilios inmediatos con lo que tienes a mano.</string>
+    <string name="medical_result_negro_guidance">Esta persona necesita evaluación profesional urgente. Mantente cerca, no la dejes sola, y busca ayuda médica en cuanto puedas.</string>
+
+    <!-- Comunes -->
+    <string name="action_back">Atrás</string>
+
+    <!-- Sensor status (F4, mock) -->
+    <string name="sensor_status_title">Estado del sensor</string>
+    <string name="sensor_status_simulation_notice">Sensor simulado (demo) — aún no hay hardware ESP32+MPU6050 conectado.</string>
+    <string name="sensor_status_hardware_notice">Sensor conectado por hardware.</string>
+    <string name="sensor_status_connect">Conectar</string>
+    <string name="sensor_status_disconnect">Desconectar</string>
+
+    <!-- Disclaimer / onboarding (§7) -->
+    <string name="disclaimer_title">Antes de empezar</string>
+    <string name="disclaimer_body_purpose">Ayni es una ayuda de emergencia para cuando los profesionales no están disponibles. No reemplaza a servicios de emergencia, médicos ni ingenieros estructurales. Si puedes contactar ayuda profesional, es la prioridad.</string>
+    <string name="disclaimer_body_privacy">Todo corre en tu teléfono. Tus fotos y datos no salen del dispositivo, nunca.</string>
+    <string name="disclaimer_body_caution">El veredicto es orientativo. Ante la duda, Ayni prefiere pecar de cauteloso: sube de nivel antes que bajarlo.</string>
+    <string name="disclaimer_action_acknowledge">Entendido, continuar</string>
+</resources>

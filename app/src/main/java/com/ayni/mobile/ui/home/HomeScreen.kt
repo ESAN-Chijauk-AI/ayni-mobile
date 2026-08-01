@@ -1,0 +1,133 @@
+package com.ayni.mobile.ui.home
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.SensorsOff
+import androidx.compose.material.icons.filled.Domain
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ayni.mobile.R
+import com.ayni.mobile.ui.components.AiStatus
+import com.ayni.mobile.ui.components.OfflineStatusBadge
+import com.ayni.mobile.ui.components.ModeButton
+import com.ayni.mobile.ui.theme.AyniSemanticColors
+import com.ayni.mobile.ui.theme.Spacing
+
+/**
+ * F1: pantalla de entrada. Dos botones grandes en la mitad inferior (thumb zone, §6.1),
+ * sin scroll, acceso a estado del sensor. El disclaimer completo vive en su propia
+ * pantalla (accesible aquí y desde resultado); esta pantalla solo muestra el badge de
+ * estado de IA para no competir visualmente con los dos botones de modo.
+ */
+@Composable
+fun HomeScreen(
+    onEstructuralClick: () -> Unit,
+    onMedicoClick: () -> Unit,
+    onSensorStatusClick: () -> Unit,
+    onDisclaimerClick: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    Scaffold { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(Spacing.lg),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge)
+                    OfflineStatusBadge(
+                        aiStatus = when {
+                            uiState.aiReady -> AiStatus.READY
+                            !uiState.modelFilePresent -> AiStatus.MODEL_MISSING
+                            else -> AiStatus.WARMING_UP
+                        }
+                    )
+                }
+                Spacer(modifier = Modifier.height(Spacing.sm))
+                TextButton(onClick = onDisclaimerClick) {
+                    Text(stringResource(R.string.home_disclaimer_link))
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                ModeButton(
+                    label = stringResource(R.string.home_mode_structural),
+                    description = stringResource(R.string.home_mode_structural_description),
+                    icon = Icons.Filled.Domain,
+                    containerColor = AyniSemanticColors.signal,
+                    contentColor = Color.Black,
+                    onClick = onEstructuralClick
+                )
+                ModeButton(
+                    label = stringResource(R.string.home_mode_medical),
+                    description = stringResource(R.string.home_mode_medical_description),
+                    icon = Icons.Filled.HealthAndSafety,
+                    containerColor = AyniSemanticColors.rojo,
+                    contentColor = Color.White,
+                    onClick = onMedicoClick
+                )
+
+                Surface(
+                    onClick = onSensorStatusClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = if (uiState.sensorConnected) {
+                                stringResource(R.string.home_sensor_connected)
+                            } else {
+                                stringResource(R.string.home_sensor_disconnected)
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (!uiState.sensorConnected) {
+                            Icon(
+                                imageVector = Icons.Filled.SensorsOff,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

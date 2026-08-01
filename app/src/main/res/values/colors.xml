@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Espejo XML de ui/theme/Color.kt §6.2 del spec, solo para el tema de arranque
+         (status/nav bar) antes de que Compose tome control. La fuente de verdad
+         para la UI es Color.kt; mantener ambos en sync si cambian los tokens. -->
+    <color name="ayni_surface">#0E1116</color>
+</resources>
