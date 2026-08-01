@@ -19,6 +19,7 @@ object AyniDestinations {
     const val MEDICAL_RESULT = "medical_result"
 
     const val SENSOR_STATUS = "sensor_status"
+    const val PROXIMITY = "proximity"
 
     // Monitoreo estructural del nodo ESP32 (subsistema IoT migrado de ProtoEstados).
     const val MONITORING = "monitoring"

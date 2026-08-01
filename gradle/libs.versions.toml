@@ -16,6 +16,7 @@ nordicBle = "2.7.2"
 kotlinxSerialization = "1.7.3"
 mediapipeTasksGenai = "0.10.35"
 room = "2.6.1"
+junit = "4.13.2"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -70,3 +71,4 @@ mediapipe-tasks-genai = { group = "com.google.mediapipe", name = "tasks-genai", 
 # LlmInferenceSession.addImage para el modo multimodal) viven en tasks-vision,
 # no en tasks-genai — hay que declararlo explícito aunque tasks-genai lo referencie.
 mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipeTasksGenai" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }

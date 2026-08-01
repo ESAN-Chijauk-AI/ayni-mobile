@@ -6,25 +6,24 @@
          Ayni no tiene ningún camino de red, el triage es 100% on-device. -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- BLE (nodo ESP32, subsistema IoT). En API 31+ basta SCAN/CONNECT; SCAN declara
-         neverForLocation porque el escaneo no se usa para deducir ubicación. En API 26–30
-         el escaneo BLE exige los permisos Bluetooth legacy y ACCESS_FINE_LOCATION, que se
-         acotan con maxSdkVersion para no pedirlos en versiones nuevas. Sigue sin INTERNET. -->
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation" />
+    <!-- BLE compartido por el nodo ESP32 y la detección SOS teléfono-a-teléfono. El flujo
+         de proximidad sí deriva cercanía física de RSSI: deliberadamente NO se declara
+         neverForLocation y ACCESS_FINE_LOCATION permanece disponible en todas las APIs. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30" />
     <uses-permission
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
-    <uses-permission
-        android:name="android.permission.ACCESS_FINE_LOCATION"
-        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
@@ -49,6 +48,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".data.proximity.EmergencyProximityService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
     </application>
 
 </manifest>

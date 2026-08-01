@@ -13,6 +13,7 @@ import com.ayni.mobile.ui.medical.MedicalInputScreen
 import com.ayni.mobile.ui.medical.MedicalResultScreen
 import com.ayni.mobile.ui.onboarding.DisclaimerScreen
 import com.ayni.mobile.ui.onboarding.DisclaimerViewModel
+import com.ayni.mobile.ui.proximity.ProximityRoute
 import com.ayni.mobile.ui.sensor.SensorStatusScreen
 import com.ayni.mobile.ui.structural.StructuralCaptureScreen
 import com.ayni.mobile.ui.structural.StructuralResultScreen
@@ -60,12 +61,17 @@ fun AyniNavHost(
             MonitoringRoute()
         }
 
+        composable(AyniDestinations.PROXIMITY) {
+            ProximityRoute(onBack = { navController.popBackStack() })
+        }
+
         composable(AyniDestinations.HOME) {
             HomeScreen(
                 onEstructuralClick = { navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) },
                 onMedicoClick = { navController.navigate(AyniDestinations.MEDICAL_GRAPH) },
                 onSensorStatusClick = { navController.navigate(AyniDestinations.SENSOR_STATUS) },
                 onMonitoringClick = { navController.navigate(AyniDestinations.MONITORING) },
+                onProximityClick = { navController.navigate(AyniDestinations.PROXIMITY) },
                 onDisclaimerClick = { navController.navigate(AyniDestinations.DISCLAIMER) }
             )
         }

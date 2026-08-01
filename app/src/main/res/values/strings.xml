@@ -29,6 +29,50 @@
     <string name="home_sensor_connected">Sensor conectado</string>
     <string name="home_sensor_disconnected">Sensor desconectado — toca para ver estado</string>
 
+    <!-- SOS y detección de proximidad offline -->
+    <string name="home_mode_proximity">SOS / BUSCAR</string>
+    <string name="home_mode_proximity_description">Emite una señal de auxilio o busca teléfonos Ayni cercanos</string>
+    <string name="proximity_title">SOS y búsqueda</string>
+    <string name="proximity_safety_notice">Herramienta de apoyo: la señal puede variar por concreto, metal, cuerpos y orientación. No reemplaza procedimientos profesionales de búsqueda y rescate.</string>
+    <string name="proximity_sos_mode">Necesito ayuda</string>
+    <string name="proximity_sos_inactive">Tu teléfono puede emitir una baliza anónima para otros dispositivos Ayni.</string>
+    <string name="proximity_sos_starting">Activando la señal SOS…</string>
+    <string name="proximity_sos_active">SOS ACTIVO — tu teléfono está emitiendo una señal cercana.</string>
+    <string name="proximity_sos_unsupported">Este teléfono no permite emitir balizas BLE.</string>
+    <string name="proximity_sos_error">No se pudo activar la señal. Verifica Bluetooth y vuelve a intentar.</string>
+    <string name="proximity_activate_sos">ACTIVAR SOS</string>
+    <string name="proximity_stop_sos">Detener SOS</string>
+    <string name="proximity_sos_confirm_title">¿Activar señal SOS?</string>
+    <string name="proximity_sos_confirm_body">Ayni emitirá una baliza Bluetooth anónima y mostrará una notificación permanente hasta que la detengas.</string>
+    <string name="proximity_cancel">Cancelar</string>
+    <string name="proximity_detector_mode">Buscar señales SOS</string>
+    <string name="proximity_detector_idle">Activa el detector y muévete lentamente por una zona segura.</string>
+    <string name="proximity_detector_scanning">Buscando teléfonos Ayni cercanos…</string>
+    <string name="proximity_start_search">INICIAR DETECTOR</string>
+    <string name="proximity_stop_search">Detener detector</string>
+    <string name="proximity_pulse_toggle">Sonido y vibración</string>
+    <string name="proximity_searching_signal">BUSCANDO SEÑAL</string>
+    <string name="proximity_move_slowly">Muévete lentamente y espera varias muestras</string>
+    <string name="proximity_detected_signals">Señales detectadas</string>
+    <string name="proximity_signal_id">Señal #%1$s</string>
+    <string name="proximity_signal_technical">Intensidad filtrada: %1$d dBm</string>
+    <string name="proximity_direction_warning">La app compara intensidad, no una dirección absoluta. Confirma la tendencia desde varias posiciones antes de avanzar.</string>
+    <string name="proximity_level_weak">SEÑAL DÉBIL</string>
+    <string name="proximity_level_medium">SEÑAL MEDIA</string>
+    <string name="proximity_level_strong">SEÑAL FUERTE</string>
+    <string name="proximity_trend_approaching">Acercándote — la señal está mejorando</string>
+    <string name="proximity_trend_stable">Señal estable — prueba otra dirección</string>
+    <string name="proximity_trend_away">Alejándote — regresa a la posición anterior</string>
+    <string name="proximity_trend_sampling">Tomando muestras para calcular tendencia</string>
+    <string name="proximity_bluetooth_unavailable">Bluetooth está apagado o no disponible.</string>
+    <string name="proximity_scan_error">El detector se detuvo por un error. Intenta nuevamente.</string>
+    <string name="proximity_permission_body">Ayni necesita Bluetooth, ubicación y notificaciones para emitir y detectar señales SOS cercanas.</string>
+    <string name="proximity_permission_action">Conceder permisos</string>
+    <string name="proximity_notification_channel">Señal SOS</string>
+    <string name="proximity_notification_channel_description">Mantiene visible la señal de auxilio Bluetooth.</string>
+    <string name="proximity_notification_title">SOS de Ayni activo</string>
+    <string name="proximity_notification_body">Tu teléfono está emitiendo una señal de auxilio por Bluetooth.</string>
+
     <!-- Triage estructural (F2) -->
     <string name="structural_camera_permission_needed">Ayni necesita la cámara para ver la grieta. Activa el permiso para continuar.</string>
     <string name="structural_analyzing">Analizando…</string>

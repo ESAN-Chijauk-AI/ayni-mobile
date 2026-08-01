@@ -6,6 +6,8 @@ App móvil **offline-first** de respuesta post-sismo. Dos módulos de triage con
 - **Estructural** — foto de grieta + acelerómetro (ESP32/MPU6050) → semáforo
   VERDE/AMARILLO/ROJO estilo ATC-20.
 - **Médico** — lesión → prioridad START.
+- **SOS de proximidad** — un teléfono emite una baliza BLE anónima y otros teléfonos
+  con Ayni usan intensidad+tendencia como guía cualitativa de búsqueda, sin inventar metros.
 
 `applicationId` / namespace: `com.ayni.mobile`. Dark-first, sin permiso `INTERNET`: todo
 el triage corre en el dispositivo.
@@ -36,12 +38,15 @@ Todo bajo `app/src/main/java/com/ayni/mobile/`:
 ui/            Compose + ViewModels (@HiltViewModel, estado como StateFlow inmutable)
   home/  structural/  medical/  sensor/  onboarding/  components/  navigation/  theme/
   iot/         ← sección de MONITOREO del nodo ESP32 (ver abajo)
+  proximity/   ← pantalla SOS/detector BLE teléfono-a-teléfono
 domain/        Kotlin PURO (sin android/androidx/Compose): modelos, repos (interfaces), use cases
   model/  repository/  usecase/
   iot/         ← modelos y reglas puras del nodo ESP32
+  proximity/   ← estados cualitativos y filtro RSSI puro
 data/          implementaciones: IA, sensor, persistencia
   ai/  sensor/  local/
   iot/         ← todo el subsistema IoT (BLE + Room + repositorio del nodo)
+  proximity/   ← advertising, scan filtrado y foreground service SOS
 di/            módulos Hilt
 ```
 
@@ -76,6 +81,9 @@ NodeClientFactory { listener -> FakeNodeClient(listener) }
   (`data/sensor/…`, stream de aceleración para el readout del triage F4) es independiente
   del nodo ESP32 completo (`data/iot/device/SensorNodeClient` + `ui/iot/MonitoringViewModel`).
   No los fusiones sin una unificación deliberada.
+- **Proximidad es un tercer flujo BLE deliberado, no otro sensor.** Vive bajo
+  `*/proximity/` y no reutiliza `BleGateway`, cuyo protocolo es específico del ESP32.
+  No ejecutes Monitoreo y detector/SOS simultáneamente sin coordinar la radio.
 - **Room ya existe** (`data/iot/local/IotDatabase`, v1). Para nueva persistencia: extiende
   ese esquema (sube versión + migración) o crea otra `RoomDatabase` explícitamente. No
   resetees el esquema.

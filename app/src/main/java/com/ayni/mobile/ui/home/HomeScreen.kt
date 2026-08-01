@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.SensorsOff
 import androidx.compose.material.icons.filled.Domain
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +56,7 @@ fun HomeScreen(
     onMedicoClick: () -> Unit,
     onSensorStatusClick: () -> Unit,
     onMonitoringClick: () -> Unit,
+    onProximityClick: () -> Unit,
     onDisclaimerClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -67,8 +71,9 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(Spacing.lg),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Top
         ) {
             Column {
                 Row(
@@ -138,7 +143,17 @@ fun HomeScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(Spacing.xl))
+
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                ModeButton(
+                    label = stringResource(R.string.home_mode_proximity),
+                    description = stringResource(R.string.home_mode_proximity_description),
+                    icon = Icons.Filled.Warning,
+                    containerColor = AyniSemanticColors.rojo,
+                    contentColor = Color.White,
+                    onClick = onProximityClick
+                )
                 ModeButton(
                     label = stringResource(R.string.home_mode_structural),
                     description = stringResource(R.string.home_mode_structural_description),

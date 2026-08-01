@@ -48,6 +48,9 @@ sin fusionarse. Un PR nuevo choca con esto si no respeta estas fronteras:
      Es el que expone `StructuralSnapshot`.
   Si implementas BLE real para el readout de triage, **puentea desde el stack IoT**
   (no dupliques escaneo/GATT en `BleSensorRepository`).
+- **SOS/proximidad es un flujo de radio independiente, no un tercer stack de sensor.**
+  Vive en `domain/data/ui/proximity`, anuncia y busca teléfonos Ayni, y no debe incorporar
+  el protocolo ESP32 de `BleGateway`. RSSI sólo produce intensidad+tendencia, nunca metros.
 - **Room ya existe: `data/iot/local/IotDatabase` (versión 1, 13 tablas).** Si añades F7
   (historial local) u otra persistencia: o agregas entidades a `IotDatabase` (sube la
   versión **y** escribe la migración), o creas otra `RoomDatabase` de forma explícita.
@@ -107,6 +110,9 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
 - Nav: destino `MONITORING` accesible desde Home. Manifest con permisos BLE por rango de SDK.
 - **Sin verificar en Android Studio** (Gradle sync/build/BLE en dispositivo pendientes).
+- SOS/proximidad: destino `PROXIMITY` desde Home, advertising BLE con ID efímero, servicio
+  foreground `connectedDevice`, detector filtrado por UUID Ayni, filtro RSSI, selección de
+  peer y guía visual/háptica cualitativa. Requiere validación entre dos teléfonos reales.
 
 Pendiente (en orden de impacto):
 1. **Integrar el SDK real de Gemma** en `GemmaEngineImpl` (LiteRT-LM cuando su artefacto

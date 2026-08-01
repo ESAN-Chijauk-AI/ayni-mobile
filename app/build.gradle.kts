@@ -95,4 +95,6 @@ dependencies {
     // cuando su coordenada Maven pública esté confirmada. Ver data/ai/GemmaEngine.kt.
     implementation(libs.mediapipe.tasks.genai)
     implementation(libs.mediapipe.tasks.vision)
+
+    testImplementation(libs.junit)
 }
