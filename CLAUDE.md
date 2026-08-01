@@ -108,8 +108,10 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
 - `ui/iot/`: `MonitoringViewModel` (@HiltViewModel, era MainViewModel), `MonitoringScreen`
   (3 pestañas: Medir/Historial/Equipo), `NodeWifiCard`, `MonitoringRoute` (permisos BLE).
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
+- Análisis local con Gemma de los 3 a 10 golpes válidos más recientes del montaje, con
+  salvaguardas deterministas y mensajes breves de permanencia o evacuación para civiles.
 - Nav: destino `MONITORING` accesible desde Home. Manifest con permisos BLE por rango de SDK.
-- **Sin verificar en Android Studio** (Gradle sync/build/BLE en dispositivo pendientes).
+- Gradle build, tests unitarios y Android Lint verificados; BLE real sigue pendiente de prueba.
 - SOS/proximidad: destino `PROXIMITY` desde Home, advertising BLE por UUID Ayni, servicio
   foreground `connectedDevice`, detector filtrado por UUID Ayni, filtro RSSI, selección de
   peer mediante huella local de sesión y guía visual/háptica cualitativa. Requiere
