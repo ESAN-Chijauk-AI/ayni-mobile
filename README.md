@@ -99,3 +99,7 @@ NodeClientFactory { listener -> FakeNodeClient(listener) }
 Ver la sección «Estado actual» de [`CLAUDE.md`](CLAUDE.md). Lo verificable sin
 Android Studio/dispositivo está en su «Checklist antes de abrir PR»; Gradle sync, BLE real,
 cámara, TalkBack y contraste se validan en dispositivo.
+
+## Licencia
+
+Apache License 2.0 — ver [`LICENSE`](LICENSE).
