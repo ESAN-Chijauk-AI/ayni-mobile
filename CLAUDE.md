@@ -112,6 +112,10 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
 - `ui/iot/`: `MonitoringViewModel` (@HiltViewModel, era MainViewModel), `MonitoringScreen`
   (3 pestañas: Medir/Historial/Equipo), `NodeWifiCard`, `MonitoringRoute` (permisos BLE).
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
+- Análisis local con Gemma de los 3 a 10 golpes válidos más recientes del montaje, con
+  salvaguardas deterministas y mensajes breves de permanencia o evacuación para civiles
+  (`AnalyzeStructuralHitsUseCase`, aporte de Natalia — ver `data/ai/GemmaAiRepository.kt`
+  y `data/ai/Prompts.kt`).
 - Nav: `MONITORING` y `SENSOR_STATUS` ya no cuelgan de Herramientas (eliminado, ver
   segundo rediseño abajo) — se entra desde accesos secundarios en Estructura. Manifest
   con permisos BLE por rango de SDK.
@@ -187,6 +191,18 @@ de UI/UX) — la primera pantalla ("Antes de empezar") se sentía plana y de pur
   continuar" sigue siendo obligatorio y no auto-avanza** — a diferencia del splash, este
   texto es el disclaimer de seguridad de contenido del spec (§7, no negociable), así que
   solo se le mejoró la jerarquía visual, nunca se saltea solo.
+
+**Aporte en paralelo de Natalia (mergeado a `develop`)**: análisis local con Gemma de los
+golpes válidos del montaje IoT (`AnalyzeStructuralHitsUseCase`, `data/ai/Prompts.kt`,
+cambios en `GemmaAiRepository`/`AiRepository`), más un fix real en `AyniNavHost.kt` —
+las 4 pantallas anidadas (captura/resultado estructural, input/resultado médico) ahora
+envuelven `getBackStackEntry(...)` en `remember(entry) { ... }` en vez de llamarlo directo
+en el cuerpo del composable, evitando refetch innecesario del backstack entry en cada
+recomposición. Su rama también reportó **Gradle build, tests unitarios y Android Lint
+verificados, con la app instalada y abierta en un dispositivo real** — eso fue sobre el
+estado anterior a este tercer rediseño (splash/disclaimer) y a la navegación de 4 tabs de
+esta sesión, así que la validación en dispositivo del splash, el SOS por BLE y el tag de
+IA accionable sigue pendiente.
 
 Pendiente (en orden de impacto):
 1. Colocar el modelo `gemma-4-E2B-it.litertlm` en el dispositivo — ver instrucciones en

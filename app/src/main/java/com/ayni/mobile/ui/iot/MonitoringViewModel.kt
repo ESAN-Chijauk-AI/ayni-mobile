@@ -28,6 +28,8 @@ import com.ayni.mobile.domain.iot.sameInstallationContext
 import com.ayni.mobile.domain.iot.shortDeviceId
 import com.ayni.mobile.domain.iot.validateWifiCredentials
 import com.ayni.mobile.domain.iot.wifiCommandArgument
+import com.ayni.mobile.domain.model.StructuralHitReading
+import com.ayni.mobile.domain.usecase.AnalyzeStructuralHitsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -55,6 +57,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MonitoringViewModel @Inject constructor(
     private val repository: StructuralStateRepository,
+    private val analyzeStructuralHits: AnalyzeStructuralHitsUseCase,
     nodeClientFactory: NodeClientFactory,
 ) : ViewModel(),
     SensorNodeClient.Listener {
@@ -392,6 +395,92 @@ class MonitoringViewModel @Inject constructor(
 
     fun clearHitSelection() {
         mutableUiState.update { it.copy(selectedHitKeys = emptySet()) }
+    }
+
+    fun analyzeLatestValidHits() {
+        val deviceId = mutableUiState.value.selectedDeviceId
+        val installation = currentInstallationFor(deviceId)
+        if (deviceId == null || installation == null) {
+            mutableUiState.update {
+                it.copy(
+                    structuralSafety = StructuralSafetyUiState.Failure(
+                        "Selecciona un sensor y un montaje antes de analizar.",
+                    ),
+                )
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            mutableUiState.update {
+                it.copy(structuralSafety = StructuralSafetyUiState.Working)
+            }
+            val hits = runCatching {
+                repository.findLatestValidHits(
+                    deviceId = deviceId,
+                    installationId = installation.installationId,
+                    limit = AnalyzeStructuralHitsUseCase.MAXIMUM_HIT_COUNT,
+                )
+            }.getOrElse { error ->
+                mutableUiState.update {
+                    it.copy(
+                        structuralSafety = StructuralSafetyUiState.Failure(
+                            error.message ?: "No se pudieron leer los golpes guardados.",
+                        ),
+                    )
+                }
+                return@launch
+            }
+
+            if (hits.size < AnalyzeStructuralHitsUseCase.MINIMUM_HIT_COUNT) {
+                mutableUiState.update {
+                    it.copy(
+                        structuralSafety = StructuralSafetyUiState.InsufficientData(
+                            validHitCount = hits.size,
+                            requiredCount = AnalyzeStructuralHitsUseCase.MINIMUM_HIT_COUNT,
+                        ),
+                    )
+                }
+                return@launch
+            }
+
+            val readings = hits
+                .sortedBy(HitMeasurementEntity::receivedAtEpochMs)
+                .map { hit ->
+                    StructuralHitReading(
+                        measuredAtEpochMs = hit.receivedAtEpochMs,
+                        frequencyHz = hit.fftFrequencyHz,
+                        autocorrelationFrequencyHz = hit.autocorrelationFrequencyHz,
+                        snrDb = hit.snrDb,
+                        periodicity = hit.periodicity,
+                        tiltChangeDeg = hit.tiltChangeDeg,
+                        peakAccelerationMg = hit.peakDynamicAccelerationMg,
+                        peakAngularVelocityDps = hit.peakAngularVelocityDps,
+                        reason = hit.reason,
+                    )
+                }
+            runCatching { analyzeStructuralHits(readings) }
+                .onSuccess { analysis ->
+                    mutableUiState.update {
+                        it.copy(
+                            structuralSafety = StructuralSafetyUiState.Success(
+                                analysis = analysis,
+                                validHitCount = hits.size,
+                                maximumHitCount = AnalyzeStructuralHitsUseCase.MAXIMUM_HIT_COUNT,
+                            ),
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    mutableUiState.update {
+                        it.copy(
+                            structuralSafety = StructuralSafetyUiState.Failure(
+                                error.message ?: "Gemma no pudo completar el análisis.",
+                            ),
+                        )
+                    }
+                }
+        }
     }
 
     fun deleteHit(hit: HitMeasurementEntity) {

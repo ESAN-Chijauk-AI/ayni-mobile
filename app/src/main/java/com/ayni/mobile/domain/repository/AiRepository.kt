@@ -2,6 +2,7 @@ package com.ayni.mobile.domain.repository
 
 import com.ayni.mobile.domain.model.MedicalResult
 import com.ayni.mobile.domain.model.SensorReading
+import com.ayni.mobile.domain.model.StructuralHitReading
 import com.ayni.mobile.domain.model.StructuralResult
 
 /**
@@ -22,6 +23,9 @@ interface AiRepository {
      * (el spec exige degradar con gracia en ese caso, no bloquear el análisis).
      */
     suspend fun analyzeStructure(imageBytes: ByteArray?, sensor: SensorReading?): StructuralResult
+
+    /** Analiza entre 3 y 10 golpes válidos, ordenados del más antiguo al más reciente. */
+    suspend fun analyzeStructuralHits(hits: List<StructuralHitReading>): StructuralResult
 
     suspend fun triageMedical(injuryDescription: String): MedicalResult
 }

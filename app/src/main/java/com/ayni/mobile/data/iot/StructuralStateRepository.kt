@@ -54,6 +54,16 @@ class StructuralStateRepository @Inject constructor(
         installationId: String,
     ) = dao.observeCandidateHits(deviceId, installationId)
 
+    suspend fun findLatestValidHits(
+        deviceId: String,
+        installationId: String,
+        limit: Int = 10,
+    ): List<HitMeasurementEntity> = dao.findLatestValidHits(
+        deviceId = deviceId,
+        installationId = installationId,
+        limit = limit,
+    )
+
     fun observeMeasurementTraces(
         deviceId: String,
         installationId: String,

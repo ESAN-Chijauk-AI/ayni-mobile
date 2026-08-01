@@ -271,6 +271,22 @@ interface StructuralStateDao {
         installationId: String,
     ): Flow<List<HitMeasurementEntity>>
 
+    @Query(
+        """
+        SELECT * FROM hit_measurements
+        WHERE deviceId = :deviceId
+          AND installationId = :installationId
+          AND valid = 1
+        ORDER BY receivedAtEpochMs DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun findLatestValidHits(
+        deviceId: String,
+        installationId: String,
+        limit: Int,
+    ): List<HitMeasurementEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMeasurementTrace(trace: MeasurementTraceEntity)
 
