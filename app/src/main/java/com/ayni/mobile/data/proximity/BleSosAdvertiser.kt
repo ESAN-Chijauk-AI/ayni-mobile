@@ -38,7 +38,8 @@ class BleSosAdvertiser @Inject constructor(
         val settings = AdvertiseSettings.Builder()
             .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
             .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-            .setConnectable(false)
+            // Conectable para que el detector entregue un acuse verificable por GATT.
+            .setConnectable(true)
             .setTimeout(0)
             .build()
         // El detector filtra exactamente este mismo campo Service UUID. Mantener el

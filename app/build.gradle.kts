@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.ayni.mobile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ayni.mobile"
@@ -85,6 +85,7 @@ dependencies {
 
     implementation(libs.nordic.ble)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.core.uwb)
 
     // Room (subsistema IoT). El compiler corre por KSP, no kapt (ayni ya usa KSP para Hilt).
     implementation(libs.room.runtime)

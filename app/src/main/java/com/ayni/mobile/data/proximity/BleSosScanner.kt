@@ -2,6 +2,7 @@ package com.ayni.mobile.data.proximity
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
@@ -31,6 +32,7 @@ class BleSosScanner @Inject constructor(
 ) {
     private data class TrackedPeer(
         val tracker: RssiSignalTracker = RssiSignalTracker(),
+        var device: BluetoothDevice? = null,
         var latest: NearbySosSignal? = null,
     )
 
@@ -42,6 +44,10 @@ class BleSosScanner @Inject constructor(
 
     val signals: StateFlow<List<NearbySosSignal>> = mutableSignals.asStateFlow()
     val status: StateFlow<ProximityScanStatus> = mutableStatus.asStateFlow()
+
+    fun deviceFor(peerId: String): BluetoothDevice? = synchronized(peers) {
+        peers[peerId]?.device
+    }
 
     private val stalePeerCheck = object : Runnable {
         override fun run() {
@@ -142,6 +148,7 @@ class BleSosScanner @Inject constructor(
         synchronized(peers) {
             val isNewPeer = peerId !in peers
             val tracked = peers.getOrPut(peerId) { TrackedPeer() }
+            tracked.device = result.device
             val estimate = tracked.tracker.add(result.rssi, now)
             tracked.latest = NearbySosSignal(
                 peerId = peerId,

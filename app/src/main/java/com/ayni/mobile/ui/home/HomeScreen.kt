@@ -59,12 +59,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ayni.mobile.R
+import com.ayni.mobile.domain.proximity.ProximityRole
 import com.ayni.mobile.domain.proximity.SosModeStatus
 import com.ayni.mobile.ui.components.AiStatus
 import com.ayni.mobile.ui.components.BottomNavClearance
 import com.ayni.mobile.ui.components.OfflineStatusBadge
-import com.ayni.mobile.ui.proximity.hasProximityPermissions
-import com.ayni.mobile.ui.proximity.requiredProximityPermissions
+import com.ayni.mobile.ui.proximity.hasRolePermissions
+import com.ayni.mobile.ui.proximity.requiredPermissions
 import com.ayni.mobile.ui.theme.AyniBrandSoft
 import com.ayni.mobile.ui.theme.AyniDangerRed
 import com.ayni.mobile.ui.theme.AyniHairline
@@ -97,10 +98,12 @@ fun HomeScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let(viewModel::onModelFileSelected) }
 
-    var sosPermissionsGranted by remember { mutableStateOf(hasProximityPermissions(context)) }
+    var sosPermissionsGranted by remember {
+        mutableStateOf(hasRolePermissions(context, ProximityRole.SOS))
+    }
     val sosPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { sosPermissionsGranted = hasProximityPermissions(context) }
+    ) { sosPermissionsGranted = hasRolePermissions(context, ProximityRole.SOS) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         val aiStatus = when {
@@ -154,7 +157,7 @@ fun HomeScreen(
                             if (sosPermissionsGranted) {
                                 viewModel.onSosHoldComplete()
                             } else {
-                                sosPermissionLauncher.launch(requiredProximityPermissions())
+                                sosPermissionLauncher.launch(requiredPermissions(context, ProximityRole.SOS))
                             }
                         }
                     )

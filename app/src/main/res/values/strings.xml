@@ -76,6 +76,26 @@
     <string name="proximity_notification_channel_description">Mantiene visible la señal de auxilio Bluetooth.</string>
     <string name="proximity_notification_title">SOS de Ayni activo</string>
     <string name="proximity_notification_body">Tu teléfono está emitiendo una señal de auxilio por Bluetooth.</string>
+    <string name="proximity_choose_role">¿Qué necesitas hacer?</string>
+    <string name="proximity_choose_role_body">Cada modo usa sólo los permisos y controles necesarios para esa tarea.</string>
+    <string name="proximity_role_sos">Pedir ayuda</string>
+    <string name="proximity_role_sos_body">Emite una señal SOS y recibe confirmación cuando otro Ayni te encuentre.</string>
+    <string name="proximity_role_rescuer">Buscar personas</string>
+    <string name="proximity_role_rescuer_body">Detecta señales SOS, confirma el hallazgo y usa UWB cuando esté disponible.</string>
+    <string name="proximity_confirmed_count">%1$d detector(es) confirmaron tu SOS por GATT.</string>
+    <string name="proximity_waiting_confirmation">Esperando que otro teléfono Ayni detecte y confirme tu señal…</string>
+    <string name="proximity_uwb_ready">UWB disponible: se activará con un detector compatible.</string>
+    <string name="proximity_uwb_fallback">Este teléfono usará BLE; UWB no está disponible.</string>
+    <string name="proximity_gatt_connecting">Confirmando el hallazgo por GATT…</string>
+    <string name="proximity_gatt_confirmed">Hallazgo confirmado al teléfono SOS.</string>
+    <string name="proximity_gatt_failed">No se pudo confirmar por GATT; la guía BLE continúa.</string>
+    <string name="proximity_uwb_negotiating">Ambos teléfonos admiten UWB. Iniciando medición precisa…</string>
+    <string name="proximity_uwb_ranging">Medición UWB activa</string>
+    <string name="proximity_distance_uwb">Distancia UWB: %1$.2f m</string>
+    <string name="proximity_azimuth_uwb">Ángulo horizontal: %1$.0f°</string>
+    <string name="proximity_ble_fallback">Guía por intensidad BLE (RSSI)</string>
+    <string name="proximity_signal_lost">SEÑAL PERDIDA</string>
+    <string name="proximity_signal_lost_body">Detente y vuelve a la última posición con señal. Ayni seguirá buscando el mismo SOS.</string>
 
     <!-- Home/SOS: el botón SOS activa/desactiva la baliza BLE de proximidad -->
     <string name="home_sos_hold_activate">MANTENER 3 SEGUNDOS PARA ACTIVAR</string>
