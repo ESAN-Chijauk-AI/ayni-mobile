@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
 import android.os.SystemClock
+import android.util.Log
 import com.ayni.mobile.domain.proximity.NearbySosSignal
 import com.ayni.mobile.domain.proximity.ProximityScanStatus
 import com.ayni.mobile.domain.proximity.RssiSignalTracker
@@ -18,8 +19,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "AyniSosScanner"
 
 @Singleton
 class BleSosScanner @Inject constructor(
@@ -59,6 +63,7 @@ class BleSosScanner @Inject constructor(
         val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
         val scanner = runCatching { adapter?.bluetoothLeScanner }.getOrNull()
         if (adapter == null || !adapter.isEnabled || scanner == null) {
+            Log.e(TAG, "BLE scanner no disponible o Bluetooth apagado")
             mutableStatus.value = ProximityScanStatus.BLUETOOTH_UNAVAILABLE
             return
         }
@@ -77,6 +82,7 @@ class BleSosScanner @Inject constructor(
             }
 
             override fun onScanFailed(errorCode: Int) {
+                Log.e(TAG, "BLE scan falló; errorCode=$errorCode")
                 scanCallback = null
                 mainHandler.removeCallbacks(stalePeerCheck)
                 mutableStatus.value = ProximityScanStatus.ERROR
@@ -92,10 +98,12 @@ class BleSosScanner @Inject constructor(
             .build()
         runCatching { scanner.startScan(listOf(filter), settings, callback) }
             .onSuccess {
+                Log.i(TAG, "Detector BLE iniciado; buscando UUID=${ProximityProtocol.SERVICE_UUID}")
                 mutableStatus.value = ProximityScanStatus.SCANNING
                 mainHandler.post(stalePeerCheck)
             }
             .onFailure {
+                Log.e(TAG, "Excepción al iniciar BLE scan", it)
                 scanCallback = null
                 mutableStatus.value = if (it is SecurityException) {
                     ProximityScanStatus.PERMISSION_REQUIRED
@@ -119,20 +127,20 @@ class BleSosScanner @Inject constructor(
             publishSignals()
         }
         mutableStatus.value = ProximityScanStatus.IDLE
+        Log.i(TAG, "Detector BLE detenido")
     }
 
+    @SuppressLint("MissingPermission")
     private fun ingest(result: ScanResult) {
-        val payload = result.scanRecord
-            ?.getServiceData(ParcelUuid(ProximityProtocol.SERVICE_UUID))
-            ?: return
-        if (payload.size < ProximityProtocol.PAYLOAD_SIZE ||
-            payload[0] != ProximityProtocol.PROTOCOL_VERSION ||
-            payload[1] != ProximityProtocol.MESSAGE_TYPE_SOS
-        ) return
+        val uuid = ParcelUuid(ProximityProtocol.SERVICE_UUID)
+        if (uuid !in result.scanRecord?.serviceUuids.orEmpty()) return
 
-        val peerId = payload.copyOfRange(2, 2 + ProximityProtocol.PEER_ID_SIZE).toHex()
+        // La dirección BLE puede ser aleatoria. Se transforma en una huella corta sólo
+        // para fijar el objetivo durante esta búsqueda; no se persiste ni se muestra.
+        val peerId = result.device.address.sessionFingerprint()
         val now = SystemClock.elapsedRealtime()
         synchronized(peers) {
+            val isNewPeer = peerId !in peers
             val tracked = peers.getOrPut(peerId) { TrackedPeer() }
             val estimate = tracked.tracker.add(result.rssi, now)
             tracked.latest = NearbySosSignal(
@@ -144,6 +152,9 @@ class BleSosScanner @Inject constructor(
                 lastSeenElapsedRealtimeMs = now,
             )
             publishSignals()
+            if (isNewPeer) {
+                Log.i(TAG, "Baliza SOS Ayni encontrada; peer=$peerId rssi=${result.rssi}")
+            }
         }
     }
 
@@ -153,8 +164,11 @@ class BleSosScanner @Inject constructor(
             .sortedByDescending { it.smoothedRssi }
     }
 
-    private fun ByteArray.toHex(): String =
-        joinToString("") { "%02X".format(it.toInt() and 0xFF) }
+    private fun String.sessionFingerprint(): String = MessageDigest
+        .getInstance("SHA-256")
+        .digest(toByteArray(Charsets.UTF_8))
+        .take(4)
+        .joinToString("") { "%02X".format(it.toInt() and 0xFF) }
 
     private companion object {
         const val STALE_PEER_MS = 8_000L

@@ -114,10 +114,10 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
 - Nav: destinos `MONITORING` y `PROXIMITY` accesibles desde Herramientas (ver rediseño
   abajo — ya no cuelgan directo de Home). Manifest con permisos BLE por rango de SDK.
-- SOS/proximidad (`ui/proximity/`, `data/proximity/`): advertising BLE con ID efímero,
+- SOS/proximidad (`ui/proximity/`, `data/proximity/`): advertising BLE por UUID Ayni,
   servicio foreground `connectedDevice`, detector filtrado por UUID Ayni, filtro RSSI,
-  selección de peer y guía visual/háptica cualitativa. Requiere validación entre dos
-  teléfonos reales — sin verificar en dispositivo todavía.
+  selección de peer mediante huella local de sesión y guía visual/háptica cualitativa.
+  Requiere validación entre dos teléfonos reales — sin verificar en dispositivo todavía.
 - `MaterialTheme.colorScheme.tertiary` = ámbar (`Amarillo`) — ver "reglas de no-colisión"
   arriba, ya corregido tras el rediseño Stitch (que trae su propio verde de marca separado).
 
