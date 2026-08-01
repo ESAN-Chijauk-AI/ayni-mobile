@@ -112,6 +112,8 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
 - `ui/iot/`: `MonitoringViewModel` (@HiltViewModel, era MainViewModel), `MonitoringScreen`
   (3 pestañas: Medir/Historial/Equipo), `NodeWifiCard`, `MonitoringRoute` (permisos BLE).
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
+- Análisis local con Gemma de los 3 a 10 golpes válidos más recientes del montaje, con
+  salvaguardas deterministas y mensajes breves de permanencia o evacuación para civiles.
 - Nav: destinos `MONITORING` y `PROXIMITY` accesibles desde Herramientas (ver rediseño
   abajo — ya no cuelgan directo de Home). Manifest con permisos BLE por rango de SDK.
 - SOS/proximidad (`ui/proximity/`, `data/proximity/`): advertising BLE por UUID Ayni,
@@ -154,7 +156,8 @@ ver `ayni/DESIGN.md` ahí) — reemplaza el theme dark-first original por un sis
   `data/local/LastStructuralReportState.kt` (Hilt singleton, en memoria) guarda el último
   reporte para que la pestaña "Reportes" del bottom nav lo muestre sin pasar por el flujo
   de captura — vacío hasta la primera inspección de la sesión, no es F7.
-- **Sin verificar en Android Studio con dispositivo** (solo `assembleDebug` desde CLI).
+- Gradle build, tests unitarios y Android Lint verificados; la app fue instalada y abierta
+  en un dispositivo real. La validación de BLE entre dos teléfonos sigue pendiente.
 
 Pendiente (en orden de impacto):
 1. Colocar el modelo `gemma-4-E2B-it.litertlm` en el dispositivo — ver instrucciones en

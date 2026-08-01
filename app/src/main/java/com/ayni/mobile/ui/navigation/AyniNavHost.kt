@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -108,8 +109,10 @@ fun AyniNavHost(
                 startDestination = AyniDestinations.STRUCTURAL_CAPTURE,
                 route = AyniDestinations.STRUCTURAL_GRAPH
             ) {
-                composable(AyniDestinations.STRUCTURAL_CAPTURE) {
-                    val parentEntry = navController.getBackStackEntry(AyniDestinations.STRUCTURAL_GRAPH)
+                composable(AyniDestinations.STRUCTURAL_CAPTURE) { entry ->
+                    val parentEntry = remember(entry) {
+                        navController.getBackStackEntry(AyniDestinations.STRUCTURAL_GRAPH)
+                    }
                     StructuralCaptureScreen(
                         parentEntry = parentEntry,
                         onResultReady = {
@@ -118,8 +121,10 @@ fun AyniNavHost(
                         onClose = { navController.popBackStack() }
                     )
                 }
-                composable(AyniDestinations.STRUCTURAL_RESULT) {
-                    val parentEntry = navController.getBackStackEntry(AyniDestinations.STRUCTURAL_GRAPH)
+                composable(AyniDestinations.STRUCTURAL_RESULT) { entry ->
+                    val parentEntry = remember(entry) {
+                        navController.getBackStackEntry(AyniDestinations.STRUCTURAL_GRAPH)
+                    }
                     StructuralResultScreen(
                         parentEntry = parentEntry,
                         onNewAnalysis = {
@@ -136,8 +141,10 @@ fun AyniNavHost(
                 startDestination = AyniDestinations.MEDICAL_INPUT,
                 route = AyniDestinations.MEDICAL_GRAPH
             ) {
-                composable(AyniDestinations.MEDICAL_INPUT) {
-                    val parentEntry = navController.getBackStackEntry(AyniDestinations.MEDICAL_GRAPH)
+                composable(AyniDestinations.MEDICAL_INPUT) { entry ->
+                    val parentEntry = remember(entry) {
+                        navController.getBackStackEntry(AyniDestinations.MEDICAL_GRAPH)
+                    }
                     MedicalInputScreen(
                         parentEntry = parentEntry,
                         onResultReady = {
@@ -145,8 +152,10 @@ fun AyniNavHost(
                         }
                     )
                 }
-                composable(AyniDestinations.MEDICAL_RESULT) {
-                    val parentEntry = navController.getBackStackEntry(AyniDestinations.MEDICAL_GRAPH)
+                composable(AyniDestinations.MEDICAL_RESULT) { entry ->
+                    val parentEntry = remember(entry) {
+                        navController.getBackStackEntry(AyniDestinations.MEDICAL_GRAPH)
+                    }
                     MedicalResultScreen(
                         parentEntry = parentEntry,
                         onNewAnalysis = {

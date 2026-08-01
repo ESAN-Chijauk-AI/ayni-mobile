@@ -6,6 +6,25 @@ import com.ayni.mobile.domain.iot.MeasurementMode
 import com.ayni.mobile.domain.iot.MeasurementTrace
 import com.ayni.mobile.domain.iot.OperationalStatus
 import com.ayni.mobile.domain.iot.StructuralSnapshot
+import com.ayni.mobile.domain.model.StructuralSafetyAnalysis
+
+sealed interface StructuralSafetyUiState {
+    data object Idle : StructuralSafetyUiState
+    data object Working : StructuralSafetyUiState
+
+    data class InsufficientData(
+        val validHitCount: Int,
+        val requiredCount: Int,
+    ) : StructuralSafetyUiState
+
+    data class Success(
+        val analysis: StructuralSafetyAnalysis,
+        val validHitCount: Int,
+        val maximumHitCount: Int,
+    ) : StructuralSafetyUiState
+
+    data class Failure(val message: String) : StructuralSafetyUiState
+}
 
 data class IotUiState(
     val permissionsGranted: Boolean = false,
@@ -25,6 +44,7 @@ data class IotUiState(
     val beforeStateId: String? = null,
     val afterStateId: String? = null,
     val identityConflict: String? = null,
+    val structuralSafety: StructuralSafetyUiState = StructuralSafetyUiState.Idle,
     val message: String? = null,
     val error: String? = null,
 )

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.util.Log
 import com.ayni.mobile.di.DefaultDispatcher
 import com.ayni.mobile.domain.model.SensorReading
+import com.ayni.mobile.domain.model.StructuralHitReading
 import com.ayni.mobile.domain.model.MedicalResult
 import com.ayni.mobile.domain.model.StructuralResult
 import com.ayni.mobile.domain.repository.AiRepository
@@ -66,6 +67,24 @@ class GemmaAiRepository @Inject constructor(
 
         Log.i(TAG, "analyzeStructure total: ${System.currentTimeMillis() - totalStartMs}ms (fallback=${parsed == null})")
         (parsed ?: TriageJsonParser.STRUCTURAL_FALLBACK).copy(usoSensor = sensor != null)
+    }
+
+    override suspend fun analyzeStructuralHits(
+        hits: List<StructuralHitReading>,
+    ): StructuralResult = withContext(dispatcher) {
+        val totalStartMs = System.currentTimeMillis()
+        val prompt = Prompts.golpes(hits)
+        val parsed = generateAndParse(
+            attempt = { engine.generate(prompt) },
+            parse = TriageJsonParser::parseStructural,
+        )
+
+        Log.i(
+            TAG,
+            "analyzeStructuralHits total: ${System.currentTimeMillis() - totalStartMs}ms " +
+                "(golpes=${hits.size}, fallback=${parsed == null})",
+        )
+        (parsed ?: TriageJsonParser.STRUCTURAL_FALLBACK).copy(usoSensor = true)
     }
 
     override suspend fun triageMedical(injuryDescription: String): MedicalResult =

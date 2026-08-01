@@ -94,6 +94,7 @@ import com.ayni.mobile.domain.iot.shortDeviceId
 import com.ayni.mobile.domain.iot.summarizeDiagnostics
 import com.ayni.mobile.domain.iot.supportsLiveRestTelemetry
 import com.ayni.mobile.domain.iot.signed
+import com.ayni.mobile.domain.model.StructuralVerdict
 import com.ayni.mobile.ui.iot.components.DiagnosticTallyCard
 import com.ayni.mobile.ui.iot.components.EmptyCard
 import com.ayni.mobile.ui.iot.components.LevelBar
@@ -181,6 +182,7 @@ fun MonitoringRoute(
             onToggleHit = viewModel::toggleCandidateHit,
             onSelectAllHits = viewModel::selectAllValidHits,
             onClearHitSelection = viewModel::clearHitSelection,
+            onAnalyzeLatestHits = viewModel::analyzeLatestValidHits,
             onRegisterState = viewModel::registerSelectedState,
             onStartInstallation = viewModel::startInstallation,
             onDeleteHit = viewModel::deleteHit,
@@ -230,6 +232,7 @@ fun MonitoringScreen(
     onToggleHit: (HitMeasurementEntity) -> Unit,
     onSelectAllHits: () -> Unit,
     onClearHitSelection: () -> Unit,
+    onAnalyzeLatestHits: () -> Unit,
     onRegisterState: (String) -> Unit,
     onStartInstallation: (String?, String, String, String, String) -> Unit,
     onDeleteHit: (HitMeasurementEntity) -> Unit,
@@ -365,6 +368,7 @@ fun MonitoringScreen(
                     onToggleHit = onToggleHit,
                     onSelectAllHits = onSelectAllHits,
                     onClearHitSelection = onClearHitSelection,
+                    onAnalyzeLatestHits = onAnalyzeLatestHits,
                     onRegisterState = onRegisterState,
                     onStartInstallation = onStartInstallation,
                     onDeleteHit = onDeleteHit,
@@ -423,6 +427,7 @@ private fun MeasurementTab(
     onToggleHit: (HitMeasurementEntity) -> Unit,
     onSelectAllHits: () -> Unit,
     onClearHitSelection: () -> Unit,
+    onAnalyzeLatestHits: () -> Unit,
     onRegisterState: (String) -> Unit,
     onStartInstallation: (String?, String, String, String, String) -> Unit,
     onDeleteHit: (HitMeasurementEntity) -> Unit,
@@ -619,6 +624,70 @@ private fun MeasurementTab(
                     )
                 },
             )
+        }
+
+        item {
+            Button(
+                onClick = onAnalyzeLatestHits,
+                enabled = activeInstallation != null &&
+                    state.structuralSafety !is StructuralSafetyUiState.Working,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    if (state.structuralSafety is StructuralSafetyUiState.Working) {
+                        "Gemma está analizando..."
+                    } else {
+                        "Analizar últimos golpes válidos con Gemma"
+                    },
+                )
+            }
+        }
+
+        when (val safety = state.structuralSafety) {
+            StructuralSafetyUiState.Idle -> Unit
+
+            StructuralSafetyUiState.Working -> item {
+                SectionCard(
+                    title = "Analizando el espacio",
+                    subtitle = "Espera mientras Gemma revisa los golpes recientes.",
+                    accent = MaterialTheme.colorScheme.primary,
+                ) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+
+            is StructuralSafetyUiState.InsufficientData -> item {
+                EmptyCard(
+                    "Hay ${safety.validHitCount} de al menos ${safety.requiredCount} " +
+                        "golpes válidos. Registra más golpes y vuelve a analizar.",
+                )
+            }
+
+            is StructuralSafetyUiState.Failure -> item {
+                SectionCard(
+                    title = "No se completó el análisis",
+                    subtitle = safety.message,
+                    accent = MaterialTheme.colorScheme.error,
+                ) {}
+            }
+
+            is StructuralSafetyUiState.Success -> item {
+                val accent = when (safety.analysis.verdict) {
+                    StructuralVerdict.VERDE -> MaterialTheme.colorScheme.primary
+                    StructuralVerdict.AMARILLO -> MaterialTheme.colorScheme.tertiary
+                    StructuralVerdict.ROJO -> MaterialTheme.colorScheme.error
+                }
+                SectionCard(
+                    title = safety.analysis.summary,
+                    subtitle = "${safety.validHitCount} golpes válidos analizados · " +
+                        "máximo ${safety.maximumHitCount}",
+                    accent = accent,
+                ) {
+                    safety.analysis.steps.forEachIndexed { index, step ->
+                        Text("${index + 1}. $step")
+                    }
+                }
+            }
         }
 
         item {
