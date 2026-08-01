@@ -1,7 +1,5 @@
 package com.ayni.mobile.domain.iot
 
-
-
 enum class MeasurementMode {
     REST,
     HITS,
