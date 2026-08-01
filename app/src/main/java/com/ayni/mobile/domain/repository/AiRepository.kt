@@ -27,5 +27,9 @@ interface AiRepository {
     /** Analiza entre 3 y 10 golpes válidos, ordenados del más antiguo al más reciente. */
     suspend fun analyzeStructuralHits(hits: List<StructuralHitReading>): StructuralResult
 
-    suspend fun triageMedical(injuryDescription: String): MedicalResult
+    /**
+     * @param imageBytes foto opcional de la lesión, solo como contexto extra para Gemma;
+     * el flujo médico nunca depende de tener imagen (a diferencia de estructura).
+     */
+    suspend fun triageMedical(injuryDescription: String, imageBytes: ByteArray? = null): MedicalResult
 }

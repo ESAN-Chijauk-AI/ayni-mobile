@@ -90,7 +90,6 @@ fun AyniNavHost(
 
             composable(AyniDestinations.HOME) {
                 HomeScreen(
-                    onDisclaimerClick = { navController.navigate(AyniDestinations.DISCLAIMER) },
                     onMedicalClick = { navController.navigate(AyniDestinations.MEDICAL_GRAPH) },
                     onStructuralClick = { navController.navigate(AyniDestinations.STRUCTURAL_GRAPH) { launchSingleTop = true } },
                     onMonitoringClick = { navController.navigate(AyniDestinations.MONITORING) { launchSingleTop = true } }

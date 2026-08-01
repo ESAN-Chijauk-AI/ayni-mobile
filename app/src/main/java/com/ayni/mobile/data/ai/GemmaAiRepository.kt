@@ -40,6 +40,14 @@ class GemmaAiRepository @Inject constructor(
     override suspend fun warmUp() = withContext(dispatcher) {
         runCatching { engine.init(context) }
         runCatching { engine.generate(Prompts.SYSTEM_ESTRUCTURAL + "\nwarmup") }
+        // §7/§9 de PERQA_AGENT_RULES_GEMMA_SPEED.md: el encoder de vision se carga
+        // on-demand la PRIMERA vez que se le pasa una imagen al engine — sin este warm-up
+        // con imagen dummy, esa carga fría le cae encima al primer analisis estructural
+        // real del usuario (o ahora tambien al primer medico con foto adjunta).
+        runCatching {
+            val dummy = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+            engine.generate(Prompts.SYSTEM_ESTRUCTURAL + "\nwarmup imagen", dummy)
+        }
         Unit
     }
 
@@ -87,13 +95,17 @@ class GemmaAiRepository @Inject constructor(
         (parsed ?: TriageJsonParser.STRUCTURAL_FALLBACK).copy(usoSensor = true)
     }
 
-    override suspend fun triageMedical(injuryDescription: String): MedicalResult =
+    override suspend fun triageMedical(
+        injuryDescription: String,
+        imageBytes: ByteArray?
+    ): MedicalResult =
         withContext(dispatcher) {
             val totalStartMs = System.currentTimeMillis()
-            val prompt = Prompts.medico(injuryDescription)
+            val bitmap = imageBytes?.let { resizeForModel(it, maxSide = 768) }
+            val prompt = Prompts.medico(injuryDescription, tieneFoto = bitmap != null)
 
             val parsed = generateAndParse(
-                attempt = { engine.generate(prompt) },
+                attempt = { engine.generate(prompt, bitmap) },
                 parse = TriageJsonParser::parseMedical
             )
 

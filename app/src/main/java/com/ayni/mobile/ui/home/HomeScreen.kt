@@ -60,8 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ayni.mobile.R
+import com.ayni.mobile.domain.proximity.GattConfirmationStatus
+import com.ayni.mobile.domain.proximity.PeerConnectionState
 import com.ayni.mobile.domain.proximity.ProximityRole
+import com.ayni.mobile.domain.proximity.RangingTechnology
 import com.ayni.mobile.domain.proximity.SosModeStatus
+import com.ayni.mobile.domain.proximity.SosReceptionState
 import com.ayni.mobile.ui.components.AiStatus
 import com.ayni.mobile.ui.components.BottomNavClearance
 import com.ayni.mobile.ui.components.OfflineStatusBadge
@@ -74,20 +78,23 @@ import com.ayni.mobile.ui.theme.AyniInputBackground
 import com.ayni.mobile.ui.theme.AyniPrimaryContainer
 import com.ayni.mobile.ui.theme.AyniPrimaryFixed
 import com.ayni.mobile.ui.theme.AyniShapes
+import com.ayni.mobile.ui.theme.AyniTertiary
 import com.ayni.mobile.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
 /**
- * F1: Home es el centro de **SOS**. El botón circular ya no marca al 911 — mantener 3s
- * activa/desactiva la baliza BLE del sistema de proximidad (mismo
- * ManageEmergencyProximityUseCase que usa la pantalla Proximidad, ver
- * HomeViewModel.onSosHoldComplete). Los accesos rápidos de abajo llevan a los dos módulos
- * reales de triage: Médico (MEDICAL_GRAPH) y Estructura (STRUCTURAL_GRAPH) — ya no hay
- * "Estoy Atrapado"/"Enviar Ubicación"/Contactos de Emergencia (eran UI sin backend).
+ * F1: Home es el centro de señal de proximidad. El botón circular no marca al 911 ni dice
+ * "SOS" en ningún estado — mantener 3s activa/desactiva la baliza BLE del sistema de
+ * proximidad (mismo ManageEmergencyProximityUseCase que usa la pantalla Proximidad, ver
+ * HomeViewModel.onSosHoldComplete) para que un rescatista pueda ubicarte. Mientras está
+ * activa, refleja cercanía real (SosReceptionState/PeerConnectionState) con color y texto
+ * — nunca una distancia inventada desde RSSI, ver SosButton. Los accesos rápidos de abajo
+ * llevan a los dos módulos reales de triage: Médico (MEDICAL_GRAPH) y Estructura
+ * (STRUCTURAL_GRAPH) — ya no hay "Estoy Atrapado"/"Enviar Ubicación"/Contactos de
+ * Emergencia (eran UI sin backend).
  */
 @Composable
 fun HomeScreen(
-    onDisclaimerClick: () -> Unit,
     onMedicalClick: () -> Unit,
     onStructuralClick: () -> Unit,
     onMonitoringClick: () -> Unit,
@@ -110,17 +117,23 @@ fun HomeScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         val aiStatus = when {
             uiState.aiReady -> AiStatus.READY
+            uiState.isImportingModel -> AiStatus.IMPORTING
             !uiState.modelFilePresent -> AiStatus.MODEL_MISSING
             else -> AiStatus.WARMING_UP
         }
 
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = Spacing.marginPage, vertical = Spacing.md)
         ) {
             Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
+            Text(
+                text = stringResource(R.string.home_header_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         Column(
@@ -132,13 +145,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                TextButton(onClick = onDisclaimerClick) {
-                    Text(stringResource(R.string.home_disclaimer_link))
-                }
-
                 ModelStatusBanner(
-                    isImporting = uiState.isImportingModel,
-                    modelPresent = uiState.modelFilePresent,
                     importError = uiState.importError,
                     onPickModel = { modelPickerLauncher.launch(arrayOf("*/*")) }
                 )
@@ -152,9 +159,16 @@ fun HomeScreen(
                         aiStatus = aiStatus,
                         onPickModel = { modelPickerLauncher.launch(arrayOf("*/*")) }
                     )
-                    Spacer(modifier = Modifier.height(Spacing.lg))
+                    Text(
+                        text = stringResource(R.string.home_sos_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = Spacing.md)
+                    )
                     SosButton(
                         status = uiState.sosStatus,
+                        reception = uiState.sosReceptionState,
+                        connection = uiState.peerConnectionState,
                         onHoldComplete = {
                             if (sosPermissionsGranted) {
                                 viewModel.onSosHoldComplete()
@@ -208,29 +222,13 @@ fun HomeScreen(
 
 @Composable
 private fun ModelStatusBanner(
-    isImporting: Boolean,
-    modelPresent: Boolean,
     importError: Boolean,
     onPickModel: () -> Unit
 ) {
-    if (isImporting) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.sm),
-            shape = AyniShapes.medium,
-            color = AyniInputBackground
-        ) {
-            Row(modifier = Modifier.padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                Text(
-                    text = stringResource(R.string.home_model_importing),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(start = Spacing.sm)
-                )
-            }
-        }
-    } else if (!modelPresent) {
+    // Solo se muestra tras un intento de copia fallido. Los estados base ("falta el
+    // modelo", "copiando modelo…") ya los cubre el único pill OfflineStatusBadge de más
+    // abajo — tener un segundo panel con el mismo mensaje al mismo tiempo era redundante.
+    if (importError) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -240,11 +238,7 @@ private fun ModelStatusBanner(
         ) {
             Column(modifier = Modifier.padding(Spacing.md)) {
                 Text(
-                    text = if (importError) {
-                        stringResource(R.string.home_model_import_error)
-                    } else {
-                        stringResource(R.string.home_model_missing_body)
-                    },
+                    text = stringResource(R.string.home_model_import_error),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 TextButton(onClick = onPickModel, modifier = Modifier.padding(top = Spacing.xs)) {
@@ -256,18 +250,43 @@ private fun ModelStatusBanner(
 }
 
 /**
- * Botón SOS circular. Mantener 3s dispara onHoldComplete, que en HomeViewModel alterna
- * activar/desactivar la baliza BLE según `status` (ver ManageEmergencyProximityUseCase).
- * El ícono es de transmisión (`Campaign`), no el pictograma "SOS" — refleja lo que el
- * botón realmente hace hoy (emitir una baliza Bluetooth), no una llamada de emergencia.
- * Con `status == ACTIVE` se ve un anillo tipo radar expandiéndose, para que "está
- * transmitiendo" se lea en el UI y no solo en el texto de abajo.
+ * Botón de señal de proximidad. Mantener 3s dispara onHoldComplete, que en HomeViewModel
+ * alterna activar/desactivar la baliza BLE (ver ManageEmergencyProximityUseCase). Ya no
+ * dice "SOS" en ningún estado — el ícono es de transmisión (`Campaign`) y los textos
+ * describen lo que el botón realmente hace: emitir una señal para que un rescatista te
+ * ubique, no marcar una llamada de emergencia.
+ *
+ * Con `status == ACTIVE`, el color del núcleo y del anillo tipo radar se interpola entre
+ * verde (lejos/sin contacto) y rojo (cerca) según datos reales de proximidad — nunca se
+ * inventa una distancia en metros desde RSSI (regla de diseño): si hay ranging UWB
+ * (`connection.distanceMeters`) se usa esa distancia real; si solo hay confirmación GATT
+ * de que un rescatista te detectó (`reception.confirmedDetectors`), se usa un nivel fijo
+ * "cerca" cualitativo; sin ninguna señal, el color se mantiene neutro.
  */
 @Composable
-private fun SosButton(status: SosModeStatus, onHoldComplete: () -> Unit) {
+private fun SosButton(
+    status: SosModeStatus,
+    reception: SosReceptionState,
+    connection: PeerConnectionState,
+    onHoldComplete: () -> Unit
+) {
     val haptics = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
     var pressProgress by remember { mutableFloatStateOf(0f) }
+
+    val uwbDistance = connection.distanceMeters.takeIf { connection.technology == RangingTechnology.UWB }
+    val rescuerConfirmed = connection.confirmationStatus == GattConfirmationStatus.CONFIRMED ||
+        reception.confirmedDetectors > 0
+    val proximityTarget = when {
+        uwbDistance != null -> (1f - (uwbDistance / 15f)).coerceIn(0.15f, 1f)
+        rescuerConfirmed -> 0.55f
+        else -> 0f
+    }
+    val proximity by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = proximityTarget,
+        label = "proximity-intensity"
+    )
+    val proximityColor = androidx.compose.ui.graphics.lerp(AyniTertiary, AyniDangerRed, proximity)
 
     val radarTransition = rememberInfiniteTransition(label = "sos-radar")
     val radarProgress by radarTransition.animateFloat(
@@ -304,10 +323,19 @@ private fun SosButton(status: SosModeStatus, onHoldComplete: () -> Unit) {
             if (status == SosModeStatus.ACTIVE) {
                 val maxRadius = size.minDimension / 2f
                 drawCircle(
-                    color = AyniDangerRed.copy(alpha = (1f - radarProgress) * 0.45f),
+                    color = proximityColor.copy(alpha = (1f - radarProgress) * 0.45f),
                     radius = maxRadius * (0.55f + radarProgress * 0.45f),
                     style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
                 )
+                if (proximity > 0f) {
+                    repeat(3) { index ->
+                        drawCircle(
+                            color = proximityColor.copy(alpha = 0.10f + proximity * 0.12f),
+                            radius = maxRadius * (0.62f + index * 0.13f),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx())
+                        )
+                    }
+                }
             }
             if (pressProgress > 0f) {
                 drawArc(
@@ -322,7 +350,7 @@ private fun SosButton(status: SosModeStatus, onHoldComplete: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(172.dp)
-                .background(AyniDangerRed, CircleShape),
+                .background(if (status == SosModeStatus.ACTIVE) proximityColor else AyniDangerRed, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -332,15 +360,16 @@ private fun SosButton(status: SosModeStatus, onHoldComplete: () -> Unit) {
                     tint = Color.White,
                     modifier = Modifier.size(56.dp)
                 )
-                val captionRes = when (status) {
-                    SosModeStatus.STARTING -> R.string.home_sos_starting_caption
-                    SosModeStatus.ACTIVE -> R.string.home_sos_active_caption
-                    SosModeStatus.UNSUPPORTED -> R.string.home_sos_unsupported_caption
-                    SosModeStatus.ERROR -> R.string.home_sos_error_caption
-                    SosModeStatus.INACTIVE -> R.string.home_sos_inactive_caption
-                }
                 Text(
-                    text = stringResource(captionRes),
+                    text = when {
+                        status == SosModeStatus.STARTING -> stringResource(R.string.home_sos_starting_caption)
+                        status == SosModeStatus.UNSUPPORTED -> stringResource(R.string.home_sos_unsupported_caption)
+                        status == SosModeStatus.ERROR -> stringResource(R.string.home_sos_error_caption)
+                        status == SosModeStatus.INACTIVE -> stringResource(R.string.home_sos_inactive_caption)
+                        uwbDistance != null -> stringResource(R.string.home_sos_distance_caption, uwbDistance)
+                        rescuerConfirmed -> stringResource(R.string.home_sos_rescuer_near_caption)
+                        else -> stringResource(R.string.home_sos_active_caption)
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     color = Color.White,
                     modifier = Modifier.padding(top = 2.dp)

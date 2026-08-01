@@ -34,7 +34,7 @@ import com.ayni.mobile.ui.theme.OnSurfaceMuted
 import com.ayni.mobile.ui.theme.Spacing
 import com.ayni.mobile.ui.theme.SurfaceRaised
 
-enum class AiStatus { WARMING_UP, READY, MODEL_MISSING }
+enum class AiStatus { WARMING_UP, READY, MODEL_MISSING, IMPORTING }
 
 /**
  * Comunica que no hay red (a propósito, no es un error) y el estado del modelo IA.
@@ -56,6 +56,7 @@ fun OfflineStatusBadge(
     val text = when (aiStatus) {
         AiStatus.WARMING_UP -> stringResource(R.string.ai_status_warming_up)
         AiStatus.READY -> stringResource(R.string.ai_status_ready)
+        AiStatus.IMPORTING -> stringResource(R.string.home_model_importing)
         AiStatus.MODEL_MISSING -> if (actionable) {
             stringResource(R.string.ai_status_model_missing_actionable)
         } else {
@@ -65,6 +66,7 @@ fun OfflineStatusBadge(
     val icon = when (aiStatus) {
         AiStatus.WARMING_UP -> Icons.Filled.HourglassEmpty
         AiStatus.READY -> Icons.Filled.WifiOff // reutilizado como ícono de "sin red, por diseño"
+        AiStatus.IMPORTING -> Icons.Filled.HourglassEmpty
         AiStatus.MODEL_MISSING -> if (actionable) Icons.Filled.FolderOpen else Icons.Filled.CloudOff
     }
 

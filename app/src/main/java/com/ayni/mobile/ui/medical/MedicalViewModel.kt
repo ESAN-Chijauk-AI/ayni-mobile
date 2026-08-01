@@ -32,6 +32,13 @@ class MedicalViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<MedicalUiState>(MedicalUiState.Input())
     val uiState: StateFlow<MedicalUiState> = _uiState.asStateFlow()
 
+    private val _selectedImage = MutableStateFlow<ByteArray?>(null)
+    val selectedImage: StateFlow<ByteArray?> = _selectedImage.asStateFlow()
+
+    fun onImageSelected(imageBytes: ByteArray?) {
+        _selectedImage.value = imageBytes
+    }
+
     fun onToggleChip(label: String) {
         val current = _uiState.value as? MedicalUiState.Input ?: return
         val updated = if (label in current.selectedChips) {
@@ -55,7 +62,7 @@ class MedicalViewModel @Inject constructor(
         _uiState.value = MedicalUiState.Analyzing
         viewModelScope.launch {
             runCatching {
-                triageMedicalUseCase(description)
+                triageMedicalUseCase(description, _selectedImage.value)
             }.onSuccess { result ->
                 _uiState.value = MedicalUiState.Result(result)
             }.onFailure {
@@ -68,6 +75,7 @@ class MedicalViewModel @Inject constructor(
 
     fun onNewAnalysis() {
         _uiState.value = MedicalUiState.Input()
+        _selectedImage.value = null
     }
 
     private fun buildDescription(chips: Set<String>, freeText: String): String {

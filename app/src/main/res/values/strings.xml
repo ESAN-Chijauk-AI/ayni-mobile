@@ -16,7 +16,6 @@
     <string name="ai_status_ready">IA lista — sin conexión, por diseño</string>
     <string name="ai_status_model_missing">Modelo IA no encontrado</string>
     <string name="ai_status_model_missing_actionable">Sin modelo IA — toca para elegirlo</string>
-    <string name="home_model_missing_body">Falta el modelo de IA. Elige el archivo .litertlm desde tu teléfono — no sale de tu dispositivo.</string>
     <string name="home_model_missing_action">Elegir archivo del modelo</string>
     <string name="home_model_importing">Copiando modelo…</string>
     <string name="home_model_import_error">No se pudo copiar el archivo. Intenta de nuevo.</string>
@@ -27,6 +26,7 @@
     <string name="sensor_readout_live">Sensor en vivo</string>
 
     <!-- Home (F1) -->
+    <string name="home_header_subtitle">Tu ayuda de emergencia offline</string>
     <string name="home_disclaimer_link">Antes de usar Ayni, lee esto</string>
     <string name="home_mode_structural">ESTRUCTURA</string>
     <string name="home_mode_structural_description">Evalúa si un edificio es seguro con una foto de la grieta</string>
@@ -100,12 +100,15 @@
     <!-- Home/SOS: el botón SOS activa/desactiva la baliza BLE de proximidad -->
     <string name="home_sos_hold_activate">MANTENER 3 SEGUNDOS PARA ACTIVAR</string>
     <string name="home_sos_hold_deactivate">MANTENER 3 SEGUNDOS PARA DETENER</string>
-    <string name="home_sos_inactive_caption">SOS</string>
+    <string name="home_sos_inactive_caption">SEÑAL</string>
     <string name="home_sos_starting_caption">ACTIVANDO…</string>
-    <string name="home_sos_active_caption">ACTIVO</string>
+    <string name="home_sos_active_caption">TRANSMITIENDO</string>
+    <string name="home_sos_rescuer_near_caption">TE ENCONTRARON</string>
+    <string name="home_sos_distance_caption">%1$.0f m</string>
     <string name="home_sos_unsupported_caption">NO DISPONIBLE</string>
     <string name="home_sos_error_caption">ERROR</string>
-    <string name="home_sos_content_description">Botón SOS. Mantén presionado 3 segundos para activar o detener la baliza de auxilio por Bluetooth</string>
+    <string name="home_sos_subtitle">Activa para que un rescatista pueda ubicarte</string>
+    <string name="home_sos_content_description">Botón de señal de auxilio. Mantén presionado 3 segundos para activar o detener tu baliza Bluetooth de proximidad</string>
     <string name="home_action_medical">Apoyo Médico</string>
     <string name="home_action_structural">Analizar Estructura</string>
     <string name="home_action_iot">Monitoreo IoT</string>
@@ -143,8 +146,16 @@
 
     <!-- Triage médico (F3) -->
     <string name="medical_input_title">¿Qué lesión ves?</string>
-    <string name="medical_input_subtitle">Toca todo lo que aplique. El texto es opcional.</string>
-    <string name="medical_input_free_text_label">Describe la lesión (opcional)</string>
+    <string name="medical_input_subtitle">Toca todo lo que aplique</string>
+    <string name="medical_input_chips_label">Lesiones comunes</string>
+    <string name="medical_input_optional_tag">Opcional</string>
+    <string name="medical_input_free_text_section_title">Más detalle</string>
+    <string name="medical_input_free_text_label">Ej: quedó atrapado bajo escombros hace 10 min…</string>
+    <string name="medical_input_photo_section_title">Foto de la lesión</string>
+    <string name="medical_input_photo_hint">Ayuda a Gemma a evaluar mejor</string>
+    <string name="medical_input_photo_add">Adjuntar foto</string>
+    <string name="medical_input_photo_remove">Quitar foto</string>
+    <string name="medical_input_photo_content_description">Foto adjunta de la lesión</string>
     <string name="medical_input_submit">Evaluar</string>
     <string name="medical_input_analyzing">Evaluando…</string>
     <string name="medical_result_steps_title">Haz esto ahora:</string>
@@ -173,7 +184,7 @@
 
     <!-- Bottom nav: Inicio / Médico / Estructura / IoT / Proximidad -->
     <string name="nav_tab_sos">Inicio</string>
-    <string name="nav_tab_medical">Médico</string>
+    <string name="nav_tab_medical">Auxilio</string>
     <string name="nav_tab_structural">Estructura</string>
     <string name="nav_tab_iot">IoT</string>
     <string name="nav_tab_proximity">Proximidad</string>

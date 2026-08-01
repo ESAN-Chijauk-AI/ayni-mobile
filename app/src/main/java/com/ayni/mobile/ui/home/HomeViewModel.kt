@@ -5,7 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayni.mobile.data.ai.ModelPaths
+import com.ayni.mobile.domain.proximity.PeerConnectionState
 import com.ayni.mobile.domain.proximity.SosModeStatus
+import com.ayni.mobile.domain.proximity.SosReceptionState
 import com.ayni.mobile.domain.repository.AiRepository
 import com.ayni.mobile.domain.repository.SensorRepository
 import com.ayni.mobile.domain.usecase.ManageEmergencyProximityUseCase
@@ -28,7 +30,9 @@ data class HomeUiState(
     val modelFilePresent: Boolean = false,
     val isImportingModel: Boolean = false,
     val importError: Boolean = false,
-    val sosStatus: SosModeStatus = SosModeStatus.INACTIVE
+    val sosStatus: SosModeStatus = SosModeStatus.INACTIVE,
+    val sosReceptionState: SosReceptionState = SosReceptionState(),
+    val peerConnectionState: PeerConnectionState = PeerConnectionState()
 )
 
 @HiltViewModel
@@ -65,15 +69,19 @@ class HomeViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<HomeUiState> = combine(
-        engineState, proximity.sosStatus
-    ) { state, sosStatus -> state.copy(sosStatus = sosStatus) }.stateIn(
+        engineState, proximity.sosStatus, proximity.sosReceptionState, proximity.peerConnectionState
+    ) { state, sosStatus, reception, connection ->
+        state.copy(sosStatus = sosStatus, sosReceptionState = reception, peerConnectionState = connection)
+    }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeUiState(
             aiReady = aiReady.value,
             sensorConnected = false,
             modelFilePresent = modelFilePresent.value,
-            sosStatus = proximity.sosStatus.value
+            sosStatus = proximity.sosStatus.value,
+            sosReceptionState = proximity.sosReceptionState.value,
+            peerConnectionState = proximity.peerConnectionState.value
         )
     )
 

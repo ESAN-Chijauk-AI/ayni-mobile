@@ -204,6 +204,55 @@ estado anterior a este tercer rediseño (splash/disclaimer) y a la navegación d
 esta sesión, así que la validación en dispositivo del splash, el SOS por BLE y el tag de
 IA accionable sigue pendiente.
 
+**Cuarto ajuste: Médico con foto opcional, Home sin "SOS" literal, ícono definitivo**
+(misma línea de feedback de UI/UX, sesión post-tercer-rediseño):
+- `ui/medical/MedicalInputScreen.kt` rediseñado: chips en su propia sección (`Lesiones
+  comunes`), texto libre y foto quedan en secciones separadas con tag "Opcional" visible
+  (`SectionLabel`), y la foto es un adjunto real, no cosmético — `MedicalViewModel`
+  expone `selectedImage: StateFlow<ByteArray?>` (mismo patrón que
+  `StructuralViewModel.capturedImage`, no se metió en el `sealed` `MedicalUiState` para
+  no complicar `copy()`/`equals` con `ByteArray`). La imagen viaja hasta Gemma: `AiRepository
+  .triageMedical(injuryDescription, imageBytes)` → `GemmaAiRepository` la redimensiona
+  igual que `analyzeStructure` (máx. 768px) y se la pasa a `engine.generate(prompt, bitmap)`;
+  `Prompts.medico` agrega una línea aclarando que hay foto adjunta. El flujo médico nunca
+  depende de la foto (a diferencia de estructura): sigue siendo 100% opcional.
+- Navbar: el tab "Médico" se sentía raro fuera de contexto → ahora dice **"Auxilio"**
+  (`nav_tab_medical`).
+- `ui/home/HomeScreen.kt`: se quitó el link "Antes de usar Ayni, lee esto" de Home (vive
+  en Splash→Disclaimer al primer uso; tenerlo repetido en la pantalla principal, con
+  fraseo "antes de usar Ayni" cuando ya se está usando, confundía) — el mismo string
+  sigue existiendo y se usa desde `StructuralResultScreen`/`MedicalResultScreen`, no se
+  tocó ahí. Se agregó subtítulo de header (`home_header_subtitle`) y una línea explicando
+  el botón (`home_sos_subtitle`, "Activa para que un rescatista pueda ubicarte").
+- **El botón grande de Home ya no dice "SOS" en ningún estado** (antes
+  `home_sos_inactive_caption` literalmente decía "SOS", pese a que el ícono/función ya
+  habían cambiado en el segundo rediseño). Además, mientras está `ACTIVE`, el color del
+  núcleo y del anillo tipo radar ahora **interpola entre verde (lejos/sin contacto) y
+  rojo (cerca)** según proximidad real — sin inventar metros desde RSSI (regla de diseño
+  intacta): usa `PeerConnectionState.distanceMeters` cuando hay ranging UWB real (mismo
+  cálculo de intensidad que `SignalGuide` en `ProximityScreen`), y si solo hay
+  confirmación GATT de un rescatista (`SosReceptionState.confirmedDetectors > 0`) usa un
+  nivel "cerca" cualitativo fijo, nunca una distancia inventada. El verde usa
+  `AyniTertiary`/`AyniTertiaryContainer` (constantes de `Color.kt` que ya existían pero
+  no estaban cableadas a ningún `colorScheme` — **no** es `colorScheme.tertiary`, que
+  sigue siendo ámbar y reservado por IoT, ver reglas de no-colisión arriba). Para esto,
+  `HomeViewModel.uiState` ahora también combina `proximity.sosReceptionState` y
+  `proximity.peerConnectionState` (antes solo exponía `sosStatus`).
+- **Ícono de launcher reemplazado** (ya no es el placeholder de onda): adaptive icon con
+  `background = drawable-nodpi/ic_launcher_background.png` (arte final: edificio
+  agrietado + trazo sismógrafo + halo ámbar, provisto por el usuario) y
+  `foreground = @android:color/transparent` (el arte ya viene con todo integrado, un
+  foreground adicional lo hubiera duplicado). El notification icon del foreground service
+  de proximidad (`EmergencyProximityService`) **ya no apunta a `ic_launcher_foreground`**
+  (se borró junto con `ic_launcher_background.xml`, ambos eran el placeholder vectorial) —
+  se creó `drawable/ic_notification.xml`, un glyph plano mínimo como exige Android para
+  íconos de la barra de estado (el sistema solo usa el canal alfa).
+- **Pendiente de validar visualmente**: el arte del nuevo ícono no se generó con el
+  "safe zone" de adaptive icons en mente (círculo central ~66% del lienzo) — el trazo del
+  sismógrafo llega cerca de la esquina superior derecha y podría recortarse en launchers
+  que usan máscara circular. Revisar en un dispositivo/emulador real y recortar el PNG
+  con más margen si se ve mal.
+
 Pendiente (en orden de impacto):
 1. Colocar el modelo `gemma-4-E2B-it.litertlm` en el dispositivo — ver instrucciones en
    `data/ai/ModelPaths.kt` o usar el selector in-app desde Home. Nunca commitear este
@@ -217,10 +266,14 @@ Pendiente (en orden de impacto):
 4. Simplificar visualmente `ui/iot/MonitoringScreen.kt` (ver nota arriba) — sigue
    sintiéndose "muy complejo" para el propósito de la app.
 5. Fuentes custom (Space Grotesk/Inter Tight, Inter, JetBrains Mono) si hay tiempo.
-6. Ícono de launcher definitivo (hoy es un placeholder de onda/sismógrafo).
+6. Revisar el recorte del ícono de launcher nuevo dentro de la máscara adaptativa
+   circular (ver nota arriba) — puede necesitar más margen.
 7. Validar en dispositivo real el toggle de SOS BLE del Home (permisos runtime +
-   foreground service) — solo se verificó que compila, no que active/desactive
-   correctamente en un teléfono físico.
+   foreground service) y el nuevo color por cercanía del botón — solo se verificó que
+   compila, no que se vea/active correctamente en un teléfono físico.
+8. Estructura y Proximidad siguen con la redada visual pendiente que el usuario pidió
+   (UI "muy pobre" de `ProximityScreen`, conexión visible del análisis IoT en el flujo de
+   captura estructural, quitar la cámara auto-abriéndose) — no tocado en esta sesión.
 
 ## Convenciones de commit
 

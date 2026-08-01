@@ -45,6 +45,8 @@ No des diagnostico definitivo; da accion inmediata con lo que hay a mano."""
         return "$SYSTEM_GOLPES\nGolpes:\n$details"
     }
 
-    fun medico(descripcionLesion: String): String =
-        "$SYSTEM_MEDICO\nLesion: $descripcionLesion"
+    fun medico(descripcionLesion: String, tieneFoto: Boolean = false): String {
+        val fotoLine = if (tieneFoto) "\nFoto adjunta: usala como contexto visual adicional." else ""
+        return "$SYSTEM_MEDICO\nLesion: $descripcionLesion$fotoLine"
+    }
 }

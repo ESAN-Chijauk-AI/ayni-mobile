@@ -65,7 +65,7 @@ class EmergencyProximityService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.proximity_notification_title))
             .setContentText(getString(R.string.proximity_notification_body))
             .setContentIntent(openAppIntent)

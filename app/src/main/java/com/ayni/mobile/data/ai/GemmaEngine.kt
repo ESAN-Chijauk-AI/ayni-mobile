@@ -9,6 +9,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * Tag único para poder filtrar Logcat por "GemmaEngine" y ver SOLO los tiempos de
@@ -123,11 +124,53 @@ class GemmaEngineImpl @Inject constructor() : GemmaEngine {
                 session.addImage(BitmapImageBuilder(image).build())
             }
             val genStartMs = System.currentTimeMillis()
-            val result = session.generateResponse()
+            val result = generateWithEarlyStop(session)
             Log.i(TAG, "generateResponse() tardo ${System.currentTimeMillis() - genStartMs}ms, respuesta: $result")
             result
         } finally {
             session.close()
         }
     }
+
+    /**
+     * Streaming con corte temprano en vez del generateResponse() bloqueante. Nuestros
+     * prompts fuerzan "SOLO JSON" de un objeto (§6 del spec de velocidad) — en cuanto la
+     * llave de nivel superior cierra ya tenemos la respuesta completa. El runtime de
+     * MediaPipe no para solo ahi: sin este corte, sigue generando relleno hasta maxTokens
+     * (200) en cada llamada, que es tiempo de decode puro tirado a la basura — para una
+     * respuesta real de ~40-60 tokens eso es facilmente el 60-70% del tiempo total.
+     */
+    private suspend fun generateWithEarlyStop(session: LlmInferenceSession): String =
+        suspendCancellableCoroutine { continuation ->
+            val builder = StringBuilder()
+            var resumed = false
+            var braceDepth = 0
+            var sawOpenBrace = false
+
+            fun finish(value: String) {
+                if (resumed) return
+                resumed = true
+                runCatching { session.cancelGenerateResponseAsync() }
+                continuation.resumeWith(Result.success(value))
+            }
+
+            session.generateResponseAsync { partial, done ->
+                builder.append(partial)
+                for (c in partial) {
+                    when (c) {
+                        '{' -> { braceDepth++; sawOpenBrace = true }
+                        '}' -> braceDepth--
+                    }
+                }
+                if (sawOpenBrace && braceDepth <= 0) {
+                    finish(builder.toString())
+                } else if (done) {
+                    finish(builder.toString())
+                }
+            }
+
+            continuation.invokeOnCancellation {
+                runCatching { session.cancelGenerateResponseAsync() }
+            }
+        }
 }

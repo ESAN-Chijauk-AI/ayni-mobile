@@ -9,7 +9,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,19 +30,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.ayni.mobile.R
-import com.ayni.mobile.ui.theme.AyniBrandSoft
 import com.ayni.mobile.ui.theme.AyniOnSurfaceVariant
 import com.ayni.mobile.ui.theme.AyniPrimary
-import com.ayni.mobile.ui.theme.AyniPrimaryContainer
 import com.ayni.mobile.ui.theme.AyniSurface
 import com.ayni.mobile.ui.theme.Spacing
 import kotlinx.coroutines.delay
@@ -52,10 +51,11 @@ private const val TRACE_DURATION_MS = 900
 private const val WORDMARK_DELAY_MS = 250L
 
 /**
- * Primer momento de marca: reproduce el trazo tipo sismógrafo (eco de
- * `ic_launcher_foreground`, el elemento signature del triage estructural §6.3) y revela
- * "Ayni" + tagline. Dura ~5s en total o se salta tocando la pantalla — un guard
- * (`finished`) evita que auto-avance y tap disparen `onFinished` dos veces.
+ * Primer momento de marca: revela el logo real de Ayni (`ic_launcher_background`, el
+ * mismo PNG del ícono de launcher — edificio agrietado + trazo sismógrafo + halo ámbar,
+ * ya trae su propio resplandor) con un fade+escala de entrada, luego "Ayni" + tagline.
+ * Dura ~5s en total o se salta tocando la pantalla — un guard (`finished`) evita que
+ * auto-avance y tap disparen `onFinished` dos veces.
  */
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
@@ -67,13 +67,13 @@ fun SplashScreen(onFinished: () -> Unit) {
         }
     }
 
-    val traceProgress = remember { Animatable(0f) }
+    val logoReveal = remember { Animatable(0f) }
     var wordmarkVisible by remember { mutableStateOf(false) }
     var taglineVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         launch {
-            traceProgress.animateTo(1f, animationSpec = tween(TRACE_DURATION_MS, easing = EaseOutCubic))
+            logoReveal.animateTo(1f, animationSpec = tween(TRACE_DURATION_MS, easing = EaseOutCubic))
             wordmarkVisible = true
             delay(WORDMARK_DELAY_MS)
             taglineVisible = true
@@ -83,11 +83,11 @@ fun SplashScreen(onFinished: () -> Unit) {
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "splash-glow")
-    val glowScale by infiniteTransition.animateFloat(
-        initialValue = 0.9f,
-        targetValue = 1.08f,
+    val breathingScale by infiniteTransition.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.04f,
         animationSpec = infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "glow-scale"
+        label = "breathing-scale"
     )
 
     val wordmarkAlpha by animateFloatAsState(
@@ -116,42 +116,20 @@ fun SplashScreen(onFinished: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(contentAlignment = Alignment.Center) {
-                // Resplandor ambiental pulsante detrás del trazo — sutil, no compite con
-                // el semáforo de veredicto (§6.2, tokens intocables).
-                Canvas(modifier = Modifier.size(180.dp)) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(AyniBrandSoft.copy(alpha = 0.9f), AyniBrandSoft.copy(alpha = 0f))
-                        ),
-                        radius = (size.minDimension / 2f) * glowScale
-                    )
-                }
-                Canvas(modifier = Modifier.size(width = 140.dp, height = 90.dp)) {
-                    val w = size.width
-                    val h = size.height
-                    // Mismo trazo que ic_launcher_foreground, normalizado a este lienzo.
-                    val points = listOf(
-                        Offset(0.10f * w, 0.55f * h),
-                        Offset(0.30f * w, 0.55f * h),
-                        Offset(0.42f * w, 0.20f * h),
-                        Offset(0.58f * w, 0.85f * h),
-                        Offset(0.70f * w, 0.55f * h),
-                        Offset(0.90f * w, 0.55f * h)
-                    )
-                    clipRect(right = w * traceProgress.value) {
-                        for (i in 0 until points.size - 1) {
-                            drawLine(
-                                color = AyniPrimaryContainer,
-                                start = points[i],
-                                end = points[i + 1],
-                                strokeWidth = 7f,
-                                cap = StrokeCap.Round
-                            )
-                        }
+            val entryScale = 0.75f + logoReveal.value * 0.25f
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_background),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(180.dp)
+                    .clip(CircleShape)
+                    .graphicsLayer {
+                        scaleX = entryScale * breathingScale
+                        scaleY = entryScale * breathingScale
+                        alpha = logoReveal.value
                     }
-                }
-            }
+            )
 
             Text(
                 text = stringResource(R.string.app_name),

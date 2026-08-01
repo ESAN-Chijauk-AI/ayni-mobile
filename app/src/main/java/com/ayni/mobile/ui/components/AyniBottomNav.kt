@@ -13,10 +13,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Sensors
-import androidx.compose.material.icons.filled.Sos
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -40,18 +40,25 @@ import com.ayni.mobile.ui.theme.AyniSurfaceContainerLowest
 
 enum class AyniTab { SOS, MEDICAL, STRUCTURAL, IOT, PROXIMITY }
 
-/** Rutas principales visibles: Inicio, Médico, Estructura, IoT y Proximidad. */
+/**
+ * Rutas visibles con bottom nav y a qué tab corresponden (5 tabs: Inicio/Auxilio/Estructura/
+ * IoT/Proximidad). STRUCTURAL_CAPTURE queda deliberadamente FUERA: es una pantalla de cámara
+ * full-bleed con su propio panel inferior (severidad + botón de captura) anclado también a
+ * `Alignment.BottomCenter` — mostrar el nav flotante ahí lo dejaba encimado sobre esos
+ * controles (bug reportado con captura de pantalla). STRUCTURAL_RESULT sí es una pantalla de
+ * revisión normal, no full-bleed, así que mantiene el nav visible.
+ */
 fun routeToTab(route: String?): AyniTab? = when (route) {
     AyniDestinations.HOME -> AyniTab.SOS
     AyniDestinations.MEDICAL_GRAPH, AyniDestinations.MEDICAL_INPUT, AyniDestinations.MEDICAL_RESULT -> AyniTab.MEDICAL
-    AyniDestinations.STRUCTURAL_GRAPH, AyniDestinations.STRUCTURAL_CAPTURE, AyniDestinations.STRUCTURAL_RESULT -> AyniTab.STRUCTURAL
+    AyniDestinations.STRUCTURAL_GRAPH, AyniDestinations.STRUCTURAL_RESULT -> AyniTab.STRUCTURAL
     AyniDestinations.MONITORING -> AyniTab.IOT
     AyniDestinations.PROXIMITY -> AyniTab.PROXIMITY
     else -> null
 }
 
 /**
- * Barra flotante glassmorphic de 5 tabs: Inicio / Médico / Estructura / IoT / Proximidad.
+ * Barra flotante glassmorphic de 5 tabs: Inicio / Auxilio / Estructura / IoT / Proximidad.
  * Sin blur real (minSdk 26, RenderEffect pediría API 31+) — se aproxima con superficie
  * semitransparente + sombra. `windowInsetsPadding(WindowInsets.navigationBars)` evita que
  * la barra del sistema (gestos o 3 botones) la tape.
@@ -84,7 +91,7 @@ fun AyniBottomNav(
             ) {
                 BottomNavItem(
                     label = stringResource(R.string.nav_tab_sos),
-                    icon = Icons.Filled.Sos,
+                    icon = Icons.Filled.Home,
                     isSelected = selected == AyniTab.SOS,
                     onClick = onSosClick
                 )

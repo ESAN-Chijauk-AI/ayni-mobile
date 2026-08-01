@@ -7,6 +7,6 @@ import javax.inject.Inject
 class TriageMedicalUseCase @Inject constructor(
     private val aiRepository: AiRepository
 ) {
-    suspend operator fun invoke(injuryDescription: String): MedicalResult =
-        aiRepository.triageMedical(injuryDescription)
+    suspend operator fun invoke(injuryDescription: String, imageBytes: ByteArray? = null): MedicalResult =
+        aiRepository.triageMedical(injuryDescription, imageBytes)
 }
