@@ -112,49 +112,81 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
 - `ui/iot/`: `MonitoringViewModel` (@HiltViewModel, era MainViewModel), `MonitoringScreen`
   (3 pestañas: Medir/Historial/Equipo), `NodeWifiCard`, `MonitoringRoute` (permisos BLE).
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
-- Nav: destinos `MONITORING` y `PROXIMITY` accesibles desde Herramientas (ver rediseño
-  abajo — ya no cuelgan directo de Home). Manifest con permisos BLE por rango de SDK.
+- Nav: `MONITORING` y `SENSOR_STATUS` ya no cuelgan de Herramientas (eliminado, ver
+  segundo rediseño abajo) — se entra desde accesos secundarios en Estructura. Manifest
+  con permisos BLE por rango de SDK.
 - SOS/proximidad (`ui/proximity/`, `data/proximity/`): advertising BLE por UUID Ayni,
   servicio foreground `connectedDevice`, detector filtrado por UUID Ayni, filtro RSSI,
   selección de peer mediante huella local de sesión y guía visual/háptica cualitativa.
   Requiere validación entre dos teléfonos reales — sin verificar en dispositivo todavía.
+  El botón SOS de Home ahora activa/desactiva esta misma baliza (ver abajo).
 - `MaterialTheme.colorScheme.tertiary` = ámbar (`Amarillo`) — ver "reglas de no-colisión"
-  arriba, ya corregido tras el rediseño Stitch (que trae su propio verde de marca separado).
+  arriba. Los colores de veredicto (Verde/Amarillo/Rojo, §6.2) siguen intocables.
 
-**Rediseño visual completo sobre Stitch** (`../stitch_remix_of_ayni_mobile_emergency_response`,
-ver `ayni/DESIGN.md` ahí) — reemplaza el theme dark-first original por un sistema claro
-"Honey Amber" y reestructura la navegación de "elegir modo" a un modelo tipo SOS/rescate:
-- `ui/theme/*`: `lightColorScheme` cálido (fondo `#FFF8F0`, primary `#7D5800`/`#F4B740`),
-  tipografía Inter/JetBrains Mono (aún fuentes de sistema, mismo `TODO(fonts)`), shapes
-  "hyper-rounded" (cards 24dp). `AyniSemanticColors` (verde/amarillo/rojo/negro) **sin
-  tocar** — siguen siendo los hex del spec original, es la única semántica intocable.
-- `ui/components/AyniBottomNav.kt`: barra flotante de 4 tabs (SOS/Herramientas/Inspección/
-  Reportes), overlay sobre un `Box` en `AyniNavHost` (no `Scaffold`), visible solo en esos
-  4 destinos top-level (`routeToTab()`).
-- `ui/home/HomeScreen.kt`: ahora es la pantalla SOS (antes elegía ESTRUCTURA/MÉDICO). Botón
-  SOS circular con hold real de 3s (`Modifier.pointerInput` + `awaitEachGesture`) que abre
-  el marcador al 911 (`Intent.ACTION_DIAL`, sin permiso). "Estoy Atrapado"/"Enviar Ubicación"
-  y el contacto "ICE" son **UI sin backend** (`Toast` "no implementado") — a propósito, no
-  hay servicio de ubicación/SMS hoy. El selector de modelo (SAF) se mantiene igual.
-- `ui/tools/ToolsScreen.kt` (nueva): grid Linterna/Señal Sonora/Brújula (placeholders
-  visuales) + "Primeros Auxilios" (**real** — entra a `MEDICAL_GRAPH`) + accesos a
-  "Estado del sensor" y "Monitoreo" (ambos reales, movidos aquí desde Home).
-  ESTRUCTURA/MÉDICO como conceptos de "modo" ya no existen en Home; se llega a Inspección
-  vía bottom nav y a Médico vía esta tarjeta.
-- `ui/structural/StructuralCaptureScreen.kt`: overlay oscuro sobre el preview real de
-  CameraX (sin cambios en la lógica de captura), retícula + badge "AI SENSOR RUNNING" +
-  control segmentado Leve/Moderada/Riesgo Alto (**visual-only**, no hay clasificación de
-  severidad propia — el veredicto real sigue viniendo solo de Gemma tras analizar).
-- `ui/structural/StructuralResultScreen.kt` + `ReportsScreen.kt` (nueva) comparten
-  `StructuralReportContent` (composable público reutilizable): header con badge de riesgo
-  (colores semánticos intocables), foto real capturada (`StructuralViewModel.capturedImage`),
-  tarjetas de fecha/hora real y GPS (**honesto**: "No disponible", no hay ubicación
-  integrada), "Pulso Estructural" (reusa `SensorSignatureReadout` real), observaciones
-  desde `razon`/`accion` reales de Gemma, "Compartir Reporte" real (`Intent.ACTION_SEND`).
-  `data/local/LastStructuralReportState.kt` (Hilt singleton, en memoria) guarda el último
-  reporte para que la pestaña "Reportes" del bottom nav lo muestre sin pasar por el flujo
-  de captura — vacío hasta la primera inspección de la sesión, no es F7.
-- **Sin verificar en Android Studio con dispositivo** (solo `assembleDebug` desde CLI).
+**Primer rediseño visual sobre Stitch** (`../stitch_remix_of_ayni_mobile_emergency_response`)
+— reemplazó el theme dark-first por un sistema claro "Honey Amber" (`ui/theme/*`,
+`lightColorScheme` fondo `#FFF8F0`, primary `#7D5800`/`#F4B740`, shapes "hyper-rounded")
+y pasó Home de "elegir modo" a un modelo tipo SOS/rescate. `AyniSemanticColors`
+(verde/amarillo/rojo/negro) sin tocar desde entonces — sigue siendo la única semántica
+intocable. Tipografía aún de sistema (`TODO(fonts)`, Inter/JetBrains Mono pendientes).
+
+**Segundo rediseño: navbar de 4 tabs funcionales + SOS real** (sesión post-hackathon,
+feedback de que el primer rediseño quedaba "muy complejo" y con UI sin backend) —
+simplifica la navegación a lo que la app realmente hace:
+- `ui/components/AyniBottomNav.kt`: 4 tabs **Inicio / Médico / Estructura / Proximidad**
+  (`enum AyniTab`), ya no hay Herramientas/Inspección/Reportes. `routeToTab()` mapea
+  `MEDICAL_GRAPH`+hijos → MEDICAL y `STRUCTURAL_GRAPH`+hijos → STRUCTURAL (antes
+  `STRUCTURAL_RESULT` mapeaba a REPORTS, inconsistencia ya corregida). La barra usa
+  `windowInsetsPadding(WindowInsets.navigationBars)` — antes no consumía ningún inset y
+  quedaba tapada por la barra de navegación del sistema (gestos o 3 botones) en la
+  mayoría de dispositivos.
+- `ui/home/HomeScreen.kt`: el botón SOS **ya no marca al 911** — mantener 3s
+  activa/desactiva la baliza BLE de `ManageEmergencyProximityUseCase` (mismo caso de uso
+  que `ProximityScreen`), con su propio manejo de permisos runtime
+  (`requiredProximityPermissions()`/`hasProximityPermissions()`, ahora `internal` en
+  `ui/proximity/ProximityScreen.kt` para reusarlos). El círculo refleja `SosModeStatus`
+  (ACTIVO/ACTIVANDO…/ERROR/NO DISPONIBLE) en vez de repetir el texto "SOS" dos veces
+  (bug visual del primer rediseño: el ícono `Icons.Filled.Sos` ya se ve como "SOS", el
+  `Text` duplicado se quitó). Las tarjetas secundarias ya no son "Estoy
+  Atrapado"/"Enviar Ubicación" (Toast sin backend) sino **"Apoyo Médico"** y **"Analizar
+  Estructura"**, que navegan de verdad a `MEDICAL_GRAPH`/`STRUCTURAL_GRAPH`. Se eliminó
+  la sección "Contactos de Emergencia" (911/ICE) completa. Header con
+  `windowInsetsPadding(WindowInsets.statusBars)` para no quedar bajo la status bar.
+- **`ui/tools/ToolsScreen.kt` eliminado** (Linterna/Señal Sonora/Brújula eran
+  placeholders sin backend; "Primeros Auxilios" y los accesos a sensor/monitoreo se
+  reubicaron). **`ui/structural/ReportsScreen.kt` + `ReportsViewModel.kt` eliminados**
+  (`StructuralResultScreen` ya muestra el reporte justo después de analizar — la pestaña
+  Reportes separada era redundante); con ellos se fue `data/local/LastStructuralReportState.kt`
+  (ya no tiene lector).
+- `ui/structural/StructuralCaptureScreen.kt`: ahora recibe `onSensorStatusClick`/
+  `onMonitoringClick` — el readout de sensor (`SensorSignatureReadout`) es tocable y abre
+  `SENSOR_STATUS`, y hay un ícono nuevo en la top bar (`Icons.Filled.Sensors`) hacia
+  `MONITORING`. Es el reemplazo de los `TextButton` que antes vivían en Herramientas.
+- **Pendiente de este rediseño**: `ui/iot/MonitoringScreen.kt` (3 tabs Medir/Historial/
+  Equipo, >1800 líneas) sigue siendo la pantalla más compleja visualmente de la app — no
+  se tocó en esta pasada, solo se le cambió el punto de entrada. Simplificarla es la
+  siguiente mejora de UX pendiente si hay tiempo.
+- **Sin verificar en Android Studio con dispositivo** (solo `assembleDebug` desde CLI) —
+  válido para ambos rediseños.
+
+**Tercer ajuste: splash inicial + disclaimer sin muro de texto** (mismo hilo de feedback
+de UI/UX) — la primera pantalla ("Antes de empezar") se sentía plana y de puro texto:
+- `ui/onboarding/SplashScreen.kt` (nuevo): primer destino real de la app
+  (`AyniDestinations.SPLASH`, antes de Disclaimer/Home). Anima el trazo tipo sismógrafo
+  del `ic_launcher_foreground` (mismo path, revelado con `clipRect` sobre el progreso de
+  un `Animatable`), luego el wordmark "Ayni" y una tagline, con un glow ambiental
+  pulsante detrás (colores de marca, no compite con el semáforo §6.2). Dura ~5s
+  (`TOTAL_DURATION_MS`) o se salta tocando la pantalla — un guard evita disparar
+  `onFinished` dos veces si el auto-avance y el tap coinciden. `AyniNavHost` navega desde
+  ahí a `DISCLAIMER` o `HOME` con `popUpTo(SPLASH, inclusive = true)` según
+  `disclaimerViewModel.initiallyAcknowledged` (el cálculo se movió a `postSplashDestination`,
+  ya no es el `startDestination` del `NavHost`).
+- `ui/onboarding/DisclaimerScreen.kt` rediseñado: los 3 párrafos seguidos ahora son 3
+  tarjetas (`DisclaimerPoint`) con ícono propio (Info/Lock/WarningAmber) + entrada
+  escalonada (`StaggeredReveal`, fade + slide-up por ítem). **El botón "Entendido,
+  continuar" sigue siendo obligatorio y no auto-avanza** — a diferencia del splash, este
+  texto es el disclaimer de seguridad de contenido del spec (§7, no negociable), así que
+  solo se le mejoró la jerarquía visual, nunca se saltea solo.
 
 Pendiente (en orden de impacto):
 1. Colocar el modelo `gemma-4-E2B-it.litertlm` en el dispositivo — ver instrucciones en
@@ -166,10 +198,13 @@ Pendiente (en orden de impacto):
 3. IoT: verificar compilación/Room/BLE en dispositivo; opcionalmente unificar el
    `SensorRepository` mínimo (readout de triage estructural) con el `SensorNodeClient` del
    nodo, y cablear el request de `ACCESS_FINE_LOCATION` en API<31 dentro de `MonitoringRoute`.
-4. Implementar de verdad Linterna/Señal Sonora/Brújula en Herramientas si hay tiempo
-   (hoy son placeholders visuales a propósito).
-4. Fuentes custom (Space Grotesk/Inter Tight, Inter, JetBrains Mono) si hay tiempo.
-5. Ícono de launcher definitivo (hoy es un placeholder de onda/sismógrafo).
+4. Simplificar visualmente `ui/iot/MonitoringScreen.kt` (ver nota arriba) — sigue
+   sintiéndose "muy complejo" para el propósito de la app.
+5. Fuentes custom (Space Grotesk/Inter Tight, Inter, JetBrains Mono) si hay tiempo.
+6. Ícono de launcher definitivo (hoy es un placeholder de onda/sismógrafo).
+7. Validar en dispositivo real el toggle de SOS BLE del Home (permisos runtime +
+   foreground service) — solo se verificó que compila, no que active/desactive
+   correctamente en un teléfono físico.
 
 ## Convenciones de commit
 
