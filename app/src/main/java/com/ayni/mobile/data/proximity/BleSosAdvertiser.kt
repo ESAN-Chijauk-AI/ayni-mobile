@@ -7,18 +7,19 @@ import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
 import android.content.Context
 import android.os.ParcelUuid
+import android.util.Log
 import com.ayni.mobile.domain.proximity.SosModeStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "AyniSosAdvertiser"
 
 @Singleton
 class BleSosAdvertiser @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val stateStore: SosStateStore,
 ) {
-    private val random = SecureRandom()
     private var callback: AdvertiseCallback? = null
 
     @SuppressLint("MissingPermission")
@@ -29,15 +30,10 @@ class BleSosAdvertiser @Inject constructor(
         val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
         val advertiser = runCatching { adapter?.bluetoothLeAdvertiser }.getOrNull()
         if (adapter == null || advertiser == null) {
+            Log.e(TAG, "BLE advertising no está soportado por este teléfono")
             stateStore.update(SosModeStatus.UNSUPPORTED)
             return
         }
-
-        val peerId = ByteArray(ProximityProtocol.PEER_ID_SIZE).also(random::nextBytes)
-        val payload = byteArrayOf(
-            ProximityProtocol.PROTOCOL_VERSION,
-            ProximityProtocol.MESSAGE_TYPE_SOS,
-        ) + peerId
 
         val settings = AdvertiseSettings.Builder()
             .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
@@ -45,19 +41,22 @@ class BleSosAdvertiser @Inject constructor(
             .setConnectable(false)
             .setTimeout(0)
             .build()
-        // Service Data mantiene UUID + payload dentro del límite legacy de 31 bytes.
+        // El detector filtra exactamente este mismo campo Service UUID. Mantener el
+        // paquete pequeño mejora compatibilidad con advertising legacy entre OEMs.
         val data = AdvertiseData.Builder()
-            .addServiceData(ParcelUuid(ProximityProtocol.SERVICE_UUID), payload)
+            .addServiceUuid(ParcelUuid(ProximityProtocol.SERVICE_UUID))
             .setIncludeDeviceName(false)
             .setIncludeTxPowerLevel(false)
             .build()
 
         val advertiseCallback = object : AdvertiseCallback() {
             override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+                Log.i(TAG, "SOS advertising iniciado; UUID=${ProximityProtocol.SERVICE_UUID}")
                 stateStore.update(SosModeStatus.ACTIVE)
             }
 
             override fun onStartFailure(errorCode: Int) {
+                Log.e(TAG, "SOS advertising falló; errorCode=$errorCode")
                 callback = null
                 stateStore.update(
                     if (errorCode == ADVERTISE_FAILED_FEATURE_UNSUPPORTED) {
@@ -69,8 +68,10 @@ class BleSosAdvertiser @Inject constructor(
             }
         }
         callback = advertiseCallback
+        Log.i(TAG, "Solicitando inicio de SOS advertising")
         runCatching { advertiser.startAdvertising(settings, data, advertiseCallback) }
             .onFailure {
+                Log.e(TAG, "Excepción al iniciar SOS advertising", it)
                 callback = null
                 stateStore.update(SosModeStatus.ERROR)
             }
@@ -84,6 +85,7 @@ class BleSosAdvertiser @Inject constructor(
             val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
             runCatching { adapter?.bluetoothLeAdvertiser?.stopAdvertising(activeCallback) }
         }
+        Log.i(TAG, "SOS advertising detenido")
         stateStore.update(SosModeStatus.INACTIVE)
     }
 }

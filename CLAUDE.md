@@ -110,9 +110,10 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
 - Nav: destino `MONITORING` accesible desde Home. Manifest con permisos BLE por rango de SDK.
 - **Sin verificar en Android Studio** (Gradle sync/build/BLE en dispositivo pendientes).
-- SOS/proximidad: destino `PROXIMITY` desde Home, advertising BLE con ID efímero, servicio
+- SOS/proximidad: destino `PROXIMITY` desde Home, advertising BLE por UUID Ayni, servicio
   foreground `connectedDevice`, detector filtrado por UUID Ayni, filtro RSSI, selección de
-  peer y guía visual/háptica cualitativa. Requiere validación entre dos teléfonos reales.
+  peer mediante huella local de sesión y guía visual/háptica cualitativa. Requiere
+  validación entre dos teléfonos reales.
 
 Pendiente (en orden de impacto):
 1. **Integrar el SDK real de Gemma** en `GemmaEngineImpl` (LiteRT-LM cuando su artefacto
