@@ -2,6 +2,7 @@ package com.ayni.mobile.ui.structural
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ayni.mobile.data.local.LastStructuralReportState
 import com.ayni.mobile.domain.model.SensorReading
 import com.ayni.mobile.domain.model.StructuralResult
 import com.ayni.mobile.domain.repository.SensorRepository
@@ -25,7 +26,8 @@ private const val WAVEFORM_BUFFER_SIZE = 60 // ~5s a 12Hz, suficiente para el re
 @HiltViewModel
 class StructuralViewModel @Inject constructor(
     private val analyzeStructureUseCase: AnalyzeStructureUseCase,
-    private val sensorRepository: SensorRepository
+    private val sensorRepository: SensorRepository,
+    private val lastStructuralReportState: LastStructuralReportState
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<StructuralUiState>(StructuralUiState.Capturing)
@@ -35,6 +37,9 @@ class StructuralViewModel @Inject constructor(
 
     private val _magnitudes = MutableStateFlow<List<Float>>(emptyList())
     val magnitudes: StateFlow<List<Float>> = _magnitudes.asStateFlow()
+
+    private val _capturedImage = MutableStateFlow<ByteArray?>(null)
+    val capturedImage: StateFlow<ByteArray?> = _capturedImage.asStateFlow()
 
     private var lastReading: SensorReading? = null
 
@@ -49,11 +54,13 @@ class StructuralViewModel @Inject constructor(
 
     fun onImageCaptured(imageBytes: ByteArray) {
         _uiState.value = StructuralUiState.Analyzing
+        _capturedImage.value = imageBytes
         viewModelScope.launch {
             runCatching {
                 analyzeStructureUseCase(imageBytes, lastReading)
             }.onSuccess { result ->
                 _uiState.value = StructuralUiState.Result(result)
+                lastStructuralReportState.update(result, imageBytes)
             }.onFailure {
                 // AnalyzeStructureUseCase/GemmaAiRepository ya resuelven a un fallback
                 // seguro internamente; esta rama solo cubre fallos verdaderamente
@@ -71,5 +78,6 @@ class StructuralViewModel @Inject constructor(
 
     fun onNewAnalysis() {
         _uiState.value = StructuralUiState.Capturing
+        _capturedImage.value = null
     }
 }

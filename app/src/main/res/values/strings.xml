@@ -32,6 +32,7 @@
     <!-- SOS y detección de proximidad offline -->
     <string name="home_mode_proximity">SOS / BUSCAR</string>
     <string name="home_mode_proximity_description">Emite una señal de auxilio o busca teléfonos Ayni cercanos</string>
+    <string name="tools_proximity_link">Red de proximidad (SOS por Bluetooth)</string>
     <string name="proximity_title">SOS y búsqueda</string>
     <string name="proximity_safety_notice">Herramienta de apoyo: la señal puede variar por concreto, metal, cuerpos y orientación. No reemplaza procedimientos profesionales de búsqueda y rescate.</string>
     <string name="proximity_sos_mode">Necesito ayuda</string>
@@ -73,10 +74,52 @@
     <string name="proximity_notification_title">SOS de Ayni activo</string>
     <string name="proximity_notification_body">Tu teléfono está emitiendo una señal de auxilio por Bluetooth.</string>
 
+    <!-- Home/SOS (rediseño Stitch) -->
+    <string name="home_sos_label">SOS</string>
+    <string name="home_sos_hold_label">MANTENER 3 SEGUNDOS</string>
+    <string name="home_sos_content_description">Botón SOS. Mantén presionado 3 segundos para abrir el marcador con el 911</string>
+    <string name="home_action_trapped">Estoy Atrapado</string>
+    <string name="home_action_send_location">Enviar Ubicación</string>
+    <string name="home_emergency_contacts_title">Contactos de Emergencia</string>
+    <string name="home_contact_911_subtitle">Emergencia Nacional</string>
+    <string name="home_contact_ice_title">Contacto ICE</string>
+    <string name="home_contact_ice_subtitle">Supervisor de Turno</string>
+    <string name="action_not_implemented">Todavía no está implementado — próximamente</string>
+
+    <!-- Herramientas (rediseño Stitch) -->
+    <string name="tools_title">Herramientas</string>
+    <string name="tools_flashlight">Linterna</string>
+    <string name="tools_sound_signal">Señal Sonora</string>
+    <string name="tools_compass">Brújula</string>
+    <string name="tools_first_aid">Primeros Auxilios</string>
+    <string name="tools_activate_sos">ACTIVAR SOS</string>
+    <string name="tools_sensor_status_link">Estado del sensor (triage)</string>
+
     <!-- Triage estructural (F2) -->
     <string name="structural_camera_permission_needed">Ayni necesita la cámara para ver la grieta. Activa el permiso para continuar.</string>
     <string name="structural_analyzing">Analizando…</string>
     <string name="structural_capture_action">Capturar grieta</string>
+    <string name="structural_ai_sensor_running">AI SENSOR RUNNING</string>
+    <string name="structural_align_hint">Alinear grieta en el centro</string>
+    <string name="structural_severity_mild">Leve</string>
+    <string name="structural_severity_moderate">Moderada</string>
+    <string name="structural_severity_high">Riesgo Alto</string>
+
+    <!-- Reporte estructural (rediseño Stitch) -->
+    <string name="structural_report_title">Reporte Estructural</string>
+    <string name="structural_badge_safe">SEGURO</string>
+    <string name="structural_badge_caution">PRECAUCIÓN</string>
+    <string name="structural_badge_high_risk">RIESGO ALTO</string>
+    <string name="structural_report_no_photo">Sin foto</string>
+    <string name="structural_report_datetime_label">Fecha y Hora</string>
+    <string name="structural_report_gps_label">Ubicación GPS</string>
+    <string name="structural_report_gps_unavailable">No disponible</string>
+    <string name="structural_report_pulse_title">Pulso Estructural</string>
+    <string name="structural_report_observations_title">Lista de Observaciones</string>
+    <string name="structural_report_share">Compartir Reporte</string>
+
+    <string name="reports_empty_title">Aún no hay reportes</string>
+    <string name="reports_empty_body">Ve a Inspección y captura una grieta para generar tu primer reporte estructural.</string>
     <string name="structural_capture_action_description">Toma una foto de la grieta para analizarla</string>
     <string name="structural_result_no_sensor">Sin datos de sensor — analizando solo con la foto</string>
     <string name="structural_result_simulate_aftershock">Simular réplica — DEMO</string>
@@ -111,6 +154,12 @@
 
     <!-- ===================== Subsistema IoT (migrado de ProtoEstados) ===================== -->
     <string name="nav_monitoring">Monitoreo</string>
+
+    <!-- Bottom nav 4 tabs (rediseño Stitch) -->
+    <string name="nav_tab_sos">SOS</string>
+    <string name="nav_tab_tools">Herramientas</string>
+    <string name="nav_tab_inspection">Inspección</string>
+    <string name="nav_tab_reports">Reportes</string>
 
     <!-- Comprobación de sensores en reposo. Sirve para verificar que el IMU
          responde antes de confiar en una medición. -->

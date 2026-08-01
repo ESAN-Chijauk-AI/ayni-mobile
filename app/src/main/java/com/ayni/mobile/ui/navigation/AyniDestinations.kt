@@ -23,4 +23,11 @@ object AyniDestinations {
 
     // Monitoreo estructural del nodo ESP32 (subsistema IoT migrado de ProtoEstados).
     const val MONITORING = "monitoring"
+
+    // Rediseño Stitch (stitch_remix_of_ayni_mobile_emergency_response): Herramientas y
+    // Reportes son destinos top-level propios (no anidados en STRUCTURAL_GRAPH) para que
+    // la bottom nav pueda saltar directo a cualquiera de los 4 tabs sin depender de haber
+    // pasado antes por el flujo de captura.
+    const val TOOLS = "tools"
+    const val REPORTS = "reports"
 }

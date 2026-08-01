@@ -9,8 +9,8 @@ App móvil **offline-first** de respuesta post-sismo. Dos módulos de triage con
 - **SOS de proximidad** — un teléfono emite una baliza BLE anónima y otros teléfonos
   con Ayni usan intensidad+tendencia como guía cualitativa de búsqueda, sin inventar metros.
 
-`applicationId` / namespace: `com.ayni.mobile`. Dark-first, sin permiso `INTERNET`: todo
-el triage corre en el dispositivo.
+`applicationId` / namespace: `com.ayni.mobile`. Diseño claro "Honey Amber" (rediseño
+Stitch), sin permiso `INTERNET`: todo el triage corre en el dispositivo.
 
 > La guía operativa para trabajar en este repo (reglas de arquitectura, invariantes,
 > checklist de PR y estado actual) está en **[`CLAUDE.md`](CLAUDE.md)** — léela antes de

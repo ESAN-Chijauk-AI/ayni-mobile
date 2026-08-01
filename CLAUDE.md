@@ -88,10 +88,14 @@ Construido en la sesión inicial (andamiaje completo desde repo vacío):
   `GemmaEngineImpl` **stub** — ver `TODO(litert-lm)` en `data/ai/GemmaEngine.kt`.
 - `data/sensor`: `MockSensorRepository` funcional (12Hz, simula réplica), `BleSensorRepository`
   **stub sin lógica real** (F4 despriorizado a propósito, ver `TODO(ble)` ahí).
-- Theme dark-first con los tokens exactos del spec §6.2. Fuentes son placeholders del
-  sistema (`FontFamily.SansSerif`/`Monospace`) — ver `TODO(fonts)` en `ui/theme/Type.kt`.
+- ~~Theme dark-first~~ **reemplazado** (ver rediseño Stitch abajo — ya no es dark-first).
 - Flujos completos: Home (F1), Triage Estructural con CameraX (F2), Triage Médico (F3),
   Resultado con semáforo+haptics (F5), estado de sensor (F4 mock), disclaimer/onboarding (§7).
+- **Motor Gemma real** conectado vía MediaPipe LLM Inference (`GemmaEngineImpl` ya NO es
+  stub — usa `LlmInference`/`LlmInferenceSession` reales, fallback GPU→CPU, soporte imagen).
+  Logs de timing con tag `GemmaEngine`/`GemmaAiRepository` para diagnosticar latencia.
+- Selector de modelo in-app en Home (Storage Access Framework): el usuario elige el
+  `.litertlm` desde el teléfono sin adb/PC, se copia al storage privado de la app.
 
 **Subsistema IoT migrado desde ProtoEstados (Hackathon-Julio2026)** — port completo del
 nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepository` mínimo:
@@ -108,20 +112,62 @@ nodo ESP32+MPU6050, bajo el árbol `iot/` para no chocar con el `SensorRepositor
 - `ui/iot/`: `MonitoringViewModel` (@HiltViewModel, era MainViewModel), `MonitoringScreen`
   (3 pestañas: Medir/Historial/Equipo), `NodeWifiCard`, `MonitoringRoute` (permisos BLE).
   Componentes en `ui/iot/components/` (SectionCard, MeasurementTraceView, SensorOrientationView…).
-- Nav: destino `MONITORING` accesible desde Home. Manifest con permisos BLE por rango de SDK.
-- **Sin verificar en Android Studio** (Gradle sync/build/BLE en dispositivo pendientes).
-- SOS/proximidad: destino `PROXIMITY` desde Home, advertising BLE con ID efímero, servicio
-  foreground `connectedDevice`, detector filtrado por UUID Ayni, filtro RSSI, selección de
-  peer y guía visual/háptica cualitativa. Requiere validación entre dos teléfonos reales.
+- Nav: destinos `MONITORING` y `PROXIMITY` accesibles desde Herramientas (ver rediseño
+  abajo — ya no cuelgan directo de Home). Manifest con permisos BLE por rango de SDK.
+- SOS/proximidad (`ui/proximity/`, `data/proximity/`): advertising BLE con ID efímero,
+  servicio foreground `connectedDevice`, detector filtrado por UUID Ayni, filtro RSSI,
+  selección de peer y guía visual/háptica cualitativa. Requiere validación entre dos
+  teléfonos reales — sin verificar en dispositivo todavía.
+- `MaterialTheme.colorScheme.tertiary` = ámbar (`Amarillo`) — ver "reglas de no-colisión"
+  arriba, ya corregido tras el rediseño Stitch (que trae su propio verde de marca separado).
+
+**Rediseño visual completo sobre Stitch** (`../stitch_remix_of_ayni_mobile_emergency_response`,
+ver `ayni/DESIGN.md` ahí) — reemplaza el theme dark-first original por un sistema claro
+"Honey Amber" y reestructura la navegación de "elegir modo" a un modelo tipo SOS/rescate:
+- `ui/theme/*`: `lightColorScheme` cálido (fondo `#FFF8F0`, primary `#7D5800`/`#F4B740`),
+  tipografía Inter/JetBrains Mono (aún fuentes de sistema, mismo `TODO(fonts)`), shapes
+  "hyper-rounded" (cards 24dp). `AyniSemanticColors` (verde/amarillo/rojo/negro) **sin
+  tocar** — siguen siendo los hex del spec original, es la única semántica intocable.
+- `ui/components/AyniBottomNav.kt`: barra flotante de 4 tabs (SOS/Herramientas/Inspección/
+  Reportes), overlay sobre un `Box` en `AyniNavHost` (no `Scaffold`), visible solo en esos
+  4 destinos top-level (`routeToTab()`).
+- `ui/home/HomeScreen.kt`: ahora es la pantalla SOS (antes elegía ESTRUCTURA/MÉDICO). Botón
+  SOS circular con hold real de 3s (`Modifier.pointerInput` + `awaitEachGesture`) que abre
+  el marcador al 911 (`Intent.ACTION_DIAL`, sin permiso). "Estoy Atrapado"/"Enviar Ubicación"
+  y el contacto "ICE" son **UI sin backend** (`Toast` "no implementado") — a propósito, no
+  hay servicio de ubicación/SMS hoy. El selector de modelo (SAF) se mantiene igual.
+- `ui/tools/ToolsScreen.kt` (nueva): grid Linterna/Señal Sonora/Brújula (placeholders
+  visuales) + "Primeros Auxilios" (**real** — entra a `MEDICAL_GRAPH`) + accesos a
+  "Estado del sensor" y "Monitoreo" (ambos reales, movidos aquí desde Home).
+  ESTRUCTURA/MÉDICO como conceptos de "modo" ya no existen en Home; se llega a Inspección
+  vía bottom nav y a Médico vía esta tarjeta.
+- `ui/structural/StructuralCaptureScreen.kt`: overlay oscuro sobre el preview real de
+  CameraX (sin cambios en la lógica de captura), retícula + badge "AI SENSOR RUNNING" +
+  control segmentado Leve/Moderada/Riesgo Alto (**visual-only**, no hay clasificación de
+  severidad propia — el veredicto real sigue viniendo solo de Gemma tras analizar).
+- `ui/structural/StructuralResultScreen.kt` + `ReportsScreen.kt` (nueva) comparten
+  `StructuralReportContent` (composable público reutilizable): header con badge de riesgo
+  (colores semánticos intocables), foto real capturada (`StructuralViewModel.capturedImage`),
+  tarjetas de fecha/hora real y GPS (**honesto**: "No disponible", no hay ubicación
+  integrada), "Pulso Estructural" (reusa `SensorSignatureReadout` real), observaciones
+  desde `razon`/`accion` reales de Gemma, "Compartir Reporte" real (`Intent.ACTION_SEND`).
+  `data/local/LastStructuralReportState.kt` (Hilt singleton, en memoria) guarda el último
+  reporte para que la pestaña "Reportes" del bottom nav lo muestre sin pasar por el flujo
+  de captura — vacío hasta la primera inspección de la sesión, no es F7.
+- **Sin verificar en Android Studio con dispositivo** (solo `assembleDebug` desde CLI).
 
 Pendiente (en orden de impacto):
-1. **Integrar el SDK real de Gemma** en `GemmaEngineImpl` (LiteRT-LM cuando su artefacto
-   Maven público esté confirmado, o MediaPipe `tasks-genai` ya declarado en Gradle).
-2. Colocar el modelo `gemma-4-E2B-it.litertlm` en el dispositivo — ver instrucciones en
-   `data/ai/ModelPaths.kt`. Nunca commitear este archivo (`.gitignore` ya lo excluye).
+1. Colocar el modelo `gemma-4-E2B-it.litertlm` en el dispositivo — ver instrucciones en
+   `data/ai/ModelPaths.kt` o usar el selector in-app desde Home. Nunca commitear este
+   archivo (`.gitignore` ya lo excluye).
+2. Migrar `GemmaEngineImpl` de MediaPipe a LiteRT-LM cuando su artefacto Maven público
+   esté confirmado (hoy MediaPipe `tasks-genai`/`tasks-vision` 0.10.35, funcional pero
+   marcado deprecated en Java por el propio SDK).
 3. IoT: verificar compilación/Room/BLE en dispositivo; opcionalmente unificar el
    `SensorRepository` mínimo (readout de triage estructural) con el `SensorNodeClient` del
    nodo, y cablear el request de `ACCESS_FINE_LOCATION` en API<31 dentro de `MonitoringRoute`.
+4. Implementar de verdad Linterna/Señal Sonora/Brújula en Herramientas si hay tiempo
+   (hoy son placeholders visuales a propósito).
 4. Fuentes custom (Space Grotesk/Inter Tight, Inter, JetBrains Mono) si hay tiempo.
 5. Ícono de launcher definitivo (hoy es un placeholder de onda/sismógrafo).
 
