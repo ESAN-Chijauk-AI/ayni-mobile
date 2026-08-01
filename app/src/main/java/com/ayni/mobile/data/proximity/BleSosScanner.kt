@@ -85,7 +85,7 @@ class BleSosScanner @Inject constructor(
         scanCallback = callback
 
         val uuid = ParcelUuid(ProximityProtocol.SERVICE_UUID)
-        val filter = ScanFilter.Builder().setServiceData(uuid).build()
+        val filter = ScanFilter.Builder().setServiceUuid(uuid).build()
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .setReportDelay(0)

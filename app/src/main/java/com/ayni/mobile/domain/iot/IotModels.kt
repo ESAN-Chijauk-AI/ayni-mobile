@@ -1,11 +1,6 @@
 package com.ayni.mobile.domain.iot
 
-/**
- * Modelos de dominio del subsistema IoT (nodo ESP32 + MPU6050), migrados de ProtoEstados.
- *
- * Kotlin puro: cero imports de android.*/androidx.*/Room/Compose (regla de dominio de ayni).
- * Los mappers a entidades Room viven en data/iot/local/IotMappers.kt para no ensuciar el dominio.
- */
+
 
 enum class MeasurementMode {
     REST,
