@@ -158,7 +158,11 @@ class MonitoringViewModel @Inject constructor(
         mutableUiState.update {
             it.copy(
                 permissionsGranted = granted,
-                error = if (granted) null else "Se requieren permisos de Bluetooth cercano",
+                error = if (granted) {
+                    null
+                } else {
+                    "Autoriza Bluetooth cercano y ubicación precisa para descubrir nodos"
+                },
             )
         }
     }

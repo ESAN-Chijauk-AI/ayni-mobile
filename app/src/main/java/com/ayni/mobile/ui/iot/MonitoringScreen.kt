@@ -108,15 +108,11 @@ import com.ayni.mobile.ui.iot.components.SectionTitle
 import com.ayni.mobile.ui.iot.components.SensorOrientationView
 import com.ayni.mobile.ui.iot.components.StatusPill
 import com.ayni.mobile.ui.components.BottomNavClearance
+import com.ayni.mobile.ui.permissions.requiredBleScanPermissions
 import kotlin.math.abs
 
-private val REQUIRED_BLE_PERMISSIONS = arrayOf(
-    Manifest.permission.BLUETOOTH_SCAN,
-    Manifest.permission.BLUETOOTH_CONNECT,
-)
-
 private fun hasBlePermissions(context: Context): Boolean =
-    REQUIRED_BLE_PERMISSIONS.all {
+    requiredBleScanPermissions().all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 
@@ -143,8 +139,8 @@ fun MonitoringRoute(
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
-    ) { result ->
-        val granted = REQUIRED_BLE_PERMISSIONS.all { result[it] == true }
+    ) {
+        val granted = hasBlePermissions(context)
         viewModel.setPermissionsGranted(granted)
         if (granted) viewModel.startScan()
     }
@@ -170,7 +166,7 @@ fun MonitoringRoute(
                     viewModel.setPermissionsGranted(true)
                     viewModel.startScan()
                 } else {
-                    permissionLauncher.launch(REQUIRED_BLE_PERMISSIONS)
+                    permissionLauncher.launch(requiredBleScanPermissions())
                 }
             },
             onConnect = viewModel::connect,

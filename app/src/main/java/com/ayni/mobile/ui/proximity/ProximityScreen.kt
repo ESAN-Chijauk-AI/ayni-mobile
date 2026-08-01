@@ -77,6 +77,7 @@ import com.ayni.mobile.domain.proximity.ProximityScanStatus
 import com.ayni.mobile.domain.proximity.ProximitySignalLevel
 import com.ayni.mobile.domain.proximity.ProximityTrend
 import com.ayni.mobile.domain.proximity.RangingTechnology
+import com.ayni.mobile.ui.permissions.requiredBleScanPermissions
 import com.ayni.mobile.domain.proximity.SosModeStatus
 import com.ayni.mobile.domain.proximity.UwbRangingStatus
 import com.ayni.mobile.domain.proximity.proximityPulseCue
@@ -94,6 +95,9 @@ fun ProximityRoute(
     viewModel: ProximityViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    DisposableEffect(viewModel) {
+        onDispose(viewModel::stopDetection)
+    }
     ProximityScreen(
         state = state,
         onBack = { if (state.role == null) onBack() else viewModel.clearRole() },
@@ -656,17 +660,17 @@ private fun ProximityPulseEffect(
 }
 
 internal fun requiredPermissions(context: Context, role: ProximityRole): Array<String> = buildList {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    if (role == ProximityRole.RESCUER) {
+        addAll(requiredBleScanPermissions().asList())
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         add(Manifest.permission.BLUETOOTH_CONNECT)
+        add(Manifest.permission.BLUETOOTH_ADVERTISE)
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         if (context.packageManager.hasSystemFeature("android.hardware.uwb")) {
             add(Manifest.permission.UWB_RANGING)
         }
-        when (role) {
-            ProximityRole.SOS -> add(Manifest.permission.BLUETOOTH_ADVERTISE)
-            ProximityRole.RESCUER -> add(Manifest.permission.BLUETOOTH_SCAN)
-        }
     }
-    if (role == ProximityRole.RESCUER) add(Manifest.permission.ACCESS_FINE_LOCATION)
     if (role == ProximityRole.SOS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         add(Manifest.permission.POST_NOTIFICATIONS)
     }
