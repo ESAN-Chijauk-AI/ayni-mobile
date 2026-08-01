@@ -1,5 +1,7 @@
 package com.ayni.mobile.ui.home
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,10 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.SensorsOff
 import androidx.compose.material.icons.filled.Domain
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,7 +36,9 @@ import com.ayni.mobile.ui.components.AiStatus
 import com.ayni.mobile.ui.components.OfflineStatusBadge
 import com.ayni.mobile.ui.components.ModeButton
 import com.ayni.mobile.ui.theme.AyniSemanticColors
+import com.ayni.mobile.ui.theme.AyniShapes
 import com.ayni.mobile.ui.theme.Spacing
+import com.ayni.mobile.ui.theme.SurfaceRaised
 
 /**
  * F1: pantalla de entrada. Dos botones grandes en la mitad inferior (thumb zone, §6.1),
@@ -49,6 +55,10 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val modelPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(viewModel::onModelFileSelected) }
 
     Scaffold { paddingValues ->
         Column(
@@ -76,6 +86,53 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(Spacing.sm))
                 TextButton(onClick = onDisclaimerClick) {
                     Text(stringResource(R.string.home_disclaimer_link))
+                }
+
+                if (uiState.isImportingModel) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = Spacing.sm),
+                        shape = AyniShapes.medium,
+                        color = SurfaceRaised
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(Spacing.md),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.height(20.dp).width(20.dp))
+                            Text(
+                                text = stringResource(R.string.home_model_importing),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(start = Spacing.sm)
+                            )
+                        }
+                    }
+                } else if (!uiState.modelFilePresent) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = Spacing.sm),
+                        shape = AyniShapes.medium,
+                        color = SurfaceRaised
+                    ) {
+                        Column(modifier = Modifier.padding(Spacing.md)) {
+                            Text(
+                                text = if (uiState.importError) {
+                                    stringResource(R.string.home_model_import_error)
+                                } else {
+                                    stringResource(R.string.home_model_missing_body)
+                                },
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            TextButton(
+                                onClick = { modelPickerLauncher.launch(arrayOf("*/*")) },
+                                modifier = Modifier.padding(top = Spacing.xs)
+                            ) {
+                                Text(stringResource(R.string.home_model_missing_action))
+                            }
+                        }
+                    }
                 }
             }
 

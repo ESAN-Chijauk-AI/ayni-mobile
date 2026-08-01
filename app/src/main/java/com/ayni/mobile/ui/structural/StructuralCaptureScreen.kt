@@ -2,12 +2,15 @@ package com.ayni.mobile.ui.structural
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +45,9 @@ import com.ayni.mobile.R
 import com.ayni.mobile.ui.components.PrimaryActionButton
 import com.ayni.mobile.ui.components.SensorSignatureReadout
 import com.ayni.mobile.ui.theme.Spacing
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -170,7 +175,19 @@ private fun CameraPreviewWithCapture(
             val preview = Preview.Builder().build().apply {
                 setSurfaceProvider(previewView.surfaceProvider)
             }
-            val capture = ImageCapture.Builder().build()
+            // Captura a ~1280px de lado largo en vez de la resolución nativa del sensor
+            // (a veces 12MP+): menos memoria/CPU en el decode posterior y en el resize
+            // a 512-768px que hace GemmaAiRepository antes de mandarla al modelo. El
+            // freeze reportado en dispositivos reales viene de sumar esto a una
+            // inferencia CPU-only ya pesada — esto reduce la parte que sí controlamos.
+            val resolutionSelector = ResolutionSelector.Builder()
+                .setResolutionStrategy(
+                    ResolutionStrategy(Size(1280, 960), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)
+                )
+                .build()
+            val capture = ImageCapture.Builder()
+                .setResolutionSelector(resolutionSelector)
+                .build()
             runCatching {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
@@ -217,8 +234,9 @@ private fun CameraPreviewWithCapture(
                         object : ImageCapture.OnImageSavedCallback {
                             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                                 coroutineScope.launch {
-                                    val bytes = runCatching { tempFile.readBytes() }.getOrNull()
-                                    tempFile.delete()
+                                    val bytes = withContext(Dispatchers.IO) {
+                                        runCatching { tempFile.readBytes() }.getOrNull().also { tempFile.delete() }
+                                    }
                                     bytes?.let(onCaptured)
                                 }
                             }

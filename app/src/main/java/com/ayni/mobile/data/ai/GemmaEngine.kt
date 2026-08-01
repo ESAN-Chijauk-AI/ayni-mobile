@@ -2,12 +2,20 @@ package com.ayni.mobile.data.ai
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.genai.llminference.GraphOptions
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * Tag único para poder filtrar Logcat por "GemmaEngine" y ver SOLO los tiempos de
+ * carga/inferencia, separado del ruido del sistema (ver PERQA_AGENT_RULES_GEMMA_SPEED.md
+ * §13: medir después de cada cambio, separar TTFT de decode speed).
+ */
+private const val TAG = "GemmaEngine"
 
 /**
  * Envoltura propia sobre el SDK real de inferencia (LiteRT-LM / MediaPipe LLM Inference).
@@ -53,19 +61,36 @@ class GemmaEngineImpl @Inject constructor() : GemmaEngine {
     override suspend fun init(context: Context) {
         if (llmInference != null) return
         val modelPath = ModelPaths.expectedInternalPath(context).absolutePath
+        val startMs = System.currentTimeMillis()
 
         llmInference = runCatching {
             createEngine(context, modelPath, LlmInference.Backend.GPU)
-        }.getOrElse {
+        }.onSuccess {
+            Log.i(TAG, "Engine cargado con backend GPU en ${System.currentTimeMillis() - startMs}ms")
+        }.getOrElse { gpuError ->
             // Fallback CPU (regla de oro: GPU/NPU preferido, CPU como red de seguridad,
             // nunca al revés) — algunos dispositivos/emuladores no soportan el delegate GPU.
-            createEngine(context, modelPath, LlmInference.Backend.CPU)
+            // ESTE log es el más importante para diagnosticar lentitud: si ves este
+            // mensaje, el modelo está corriendo en CPU (mucho más lento, minutos en vez
+            // de segundos en Gemma 4 E2B) en vez de GPU/NPU.
+            Log.w(TAG, "GPU no disponible (${gpuError.message}), cayendo a CPU — esto puede ser la causa de la lentitud", gpuError)
+            val cpuStartMs = System.currentTimeMillis()
+            createEngine(context, modelPath, LlmInference.Backend.CPU).also {
+                Log.i(TAG, "Engine cargado con backend CPU en ${System.currentTimeMillis() - cpuStartMs}ms")
+            }
         }
     }
 
     private fun createEngine(context: Context, modelPath: String, backend: LlmInference.Backend): LlmInference {
         val options = LlmInference.LlmInferenceOptions.builder()
             .setModelPath(modelPath)
+            // OJO: este valor es prompt+respuesta combinados en MediaPipe LLM Inference,
+            // no solo la salida — con prompts de ~100-150 tokens, bajarlo mucho trunca
+            // el prompt en vez de acelerar. NO bajar sin medir tokens de prompt reales.
+            // El problema de lentitud real (ver GemmaEngine.generate) es que este
+            // runtime no para en el token de fin de turno de Gemma 4 y rellena con
+            // <eos> hasta este tope — la solución real es streaming con corte
+            // temprano (implementado abajo), no este número.
             .setMaxTokens(200)
             .setPreferredBackend(backend)
             .build()
@@ -88,13 +113,19 @@ class GemmaEngineImpl @Inject constructor() : GemmaEngine {
             )
         }
 
+        val sessionStartMs = System.currentTimeMillis()
         val session = LlmInferenceSession.createFromOptions(engine, sessionOptionsBuilder.build())
+        Log.d(TAG, "Sesion creada en ${System.currentTimeMillis() - sessionStartMs}ms (prompt: ${prompt.length} chars, imagen: ${image != null})")
+
         return try {
             session.addQueryChunk(prompt)
             if (image != null) {
                 session.addImage(BitmapImageBuilder(image).build())
             }
-            session.generateResponse()
+            val genStartMs = System.currentTimeMillis()
+            val result = session.generateResponse()
+            Log.i(TAG, "generateResponse() tardo ${System.currentTimeMillis() - genStartMs}ms, respuesta: $result")
+            result
         } finally {
             session.close()
         }

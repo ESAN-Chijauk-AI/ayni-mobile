@@ -3,6 +3,7 @@ package com.ayni.mobile.data.ai
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import com.ayni.mobile.di.DefaultDispatcher
 import com.ayni.mobile.domain.model.SensorReading
 import com.ayni.mobile.domain.model.MedicalResult
@@ -14,6 +15,8 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.max
+
+private const val TAG = "GemmaAiRepository"
 
 /**
  * Implementación de AiRepository. Reglas aplicadas (PERQA_AGENT_RULES_GEMMA_SPEED.md):
@@ -43,7 +46,12 @@ class GemmaAiRepository @Inject constructor(
         imageBytes: ByteArray?,
         sensor: SensorReading?
     ): StructuralResult = withContext(dispatcher) {
+        val totalStartMs = System.currentTimeMillis()
+        val resizeStartMs = System.currentTimeMillis()
         val bitmap = imageBytes?.let { resizeForModel(it, maxSide = 768) }
+        if (bitmap != null) {
+            Log.d(TAG, "Imagen redimensionada a ${bitmap.width}x${bitmap.height} en ${System.currentTimeMillis() - resizeStartMs}ms")
+        }
         val sensorLine = sensor?.let {
             "ax=%.2f ay=%.2f az=%.2f mag=%.2f simulado=%s".format(
                 it.ax, it.ay, it.az, it.magnitud, it.isSimulated
@@ -56,11 +64,13 @@ class GemmaAiRepository @Inject constructor(
             parse = TriageJsonParser::parseStructural
         )
 
+        Log.i(TAG, "analyzeStructure total: ${System.currentTimeMillis() - totalStartMs}ms (fallback=${parsed == null})")
         (parsed ?: TriageJsonParser.STRUCTURAL_FALLBACK).copy(usoSensor = sensor != null)
     }
 
     override suspend fun triageMedical(injuryDescription: String): MedicalResult =
         withContext(dispatcher) {
+            val totalStartMs = System.currentTimeMillis()
             val prompt = Prompts.medico(injuryDescription)
 
             val parsed = generateAndParse(
@@ -68,6 +78,7 @@ class GemmaAiRepository @Inject constructor(
                 parse = TriageJsonParser::parseMedical
             )
 
+            Log.i(TAG, "triageMedical total: ${System.currentTimeMillis() - totalStartMs}ms (fallback=${parsed == null})")
             parsed ?: TriageJsonParser.MEDICAL_FALLBACK
         }
 
@@ -78,7 +89,9 @@ class GemmaAiRepository @Inject constructor(
     ): T? {
         val first = runCatching { attempt() }.getOrNull()?.let(parse)
         if (first != null) return first
+        Log.w(TAG, "Primer intento no parseo como JSON valido, reintentando una vez")
         val retry = runCatching { attempt() }.getOrNull()?.let(parse)
+        if (retry == null) Log.w(TAG, "Reintento tambien fallo, se usara el fallback seguro")
         return retry
     }
 

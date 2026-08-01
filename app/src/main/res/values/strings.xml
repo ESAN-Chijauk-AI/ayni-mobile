@@ -10,6 +10,10 @@
     <string name="ai_status_warming_up">Preparando IA…</string>
     <string name="ai_status_ready">IA lista — sin conexión, por diseño</string>
     <string name="ai_status_model_missing">Modelo IA no encontrado</string>
+    <string name="home_model_missing_body">Falta el modelo de IA. Elige el archivo .litertlm desde tu teléfono — no sale de tu dispositivo.</string>
+    <string name="home_model_missing_action">Elegir archivo del modelo</string>
+    <string name="home_model_importing">Copiando modelo…</string>
+    <string name="home_model_import_error">No se pudo copiar el archivo. Intenta de nuevo.</string>
 
     <!-- Readout de sensor (elemento signature, §6.3) -->
     <string name="sensor_readout_disconnected">Sensor desconectado</string>
