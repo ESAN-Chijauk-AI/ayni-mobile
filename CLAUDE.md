@@ -33,6 +33,42 @@ Reglas duras que cualquier PR debe respetar:
 - Cero dependencia de red (`Retrofit`/`OkHttp`/`java.net`) en `data/ai` ni `domain`.
   Ayni es offline-first real; el `AndroidManifest.xml` **no** declara `INTERNET`.
 
+## Subsistema IoT — reglas de no-colisión (leer antes de tocar sensores, Room o BLE)
+
+El nodo ESP32+MPU6050 se migró completo desde `../../Hackathon-Julio2026/ProtoEstados`
+y vive **autocontenido bajo el sufijo `iot/`** en cada capa. Convive con la app base
+sin fusionarse. Un PR nuevo choca con esto si no respeta estas fronteras:
+
+- **Hay DOS stacks de sensor, a propósito. No los mezcles sin una unificación deliberada.**
+  1. `domain/repository/SensorRepository` + `data/sensor/{Mock,Ble}SensorRepository` — stream
+     de aceleración simple para el *readout* del triage estructural (F4). Sigue siendo el
+     que consume `AnalyzeStructureUseCase`/`SensorStatusViewModel`.
+  2. `data/iot/device/SensorNodeClient` (+ `FakeNodeClient`) + `ui/iot/MonitoringViewModel` —
+     el nodo ESP32 completo (fases REST/HITS/SEISMIC, snapshots, trazas, sismos, WiFi).
+     Es el que expone `StructuralSnapshot`.
+  Si implementas BLE real para el readout de triage, **puentea desde el stack IoT**
+  (no dupliques escaneo/GATT en `BleSensorRepository`).
+- **Room ya existe: `data/iot/local/IotDatabase` (versión 1, 13 tablas).** Si añades F7
+  (historial local) u otra persistencia: o agregas entidades a `IotDatabase` (sube la
+  versión **y** escribe la migración), o creas otra `RoomDatabase` de forma explícita.
+  Nunca resetees el esquema ni crees una segunda BD por accidente.
+- **DI del nodo en `di/IotModule`** (Hilt). El cliente es intercambiable ahí
+  (`BleGateway` ↔ `FakeNodeClient`, vía `NodeClientFactory`) — mismo patrón que
+  `di/SensorModule` para el mock. Mantenlos separados.
+- **Componentes Compose compartidos del IoT viven en `ui/iot/components/`** (SectionCard,
+  StatusPill, MetricRow, LevelBar, MeasurementTraceView…). **No** los muevas a
+  `ui/components/` (los de la app base): hay nombres que colisionarían.
+- **`domain/iot/` es puro** igual que `domain/`. Los mappers a entidades Room están en
+  `data/iot/local/IotMappers.kt`, no en el dominio.
+- **`MaterialTheme.colorScheme.tertiary` ahora significa ÁMBAR** (`Amarillo`): es el color
+  del invariante `FREQUENCY_SHIFT` (cambio estructural válido, no error). No lo repropongas
+  para otra cosa. Los colores de veredicto (Verde/Amarillo/Rojo, §6.2) siguen intocables.
+- **Ruta de navegación `AyniDestinations.MONITORING`** ya está tomada. Permisos BLE
+  (`BLUETOOTH_SCAN/CONNECT`, más legacy acotados por `maxSdkVersion` en API<31) ya están
+  en el manifest. Sigue **sin `INTERNET`** (el WiFi del ESP32 se configura por BLE, no por red).
+- **`BleGateway` usa `BluetoothGatt` crudo con rutas compat API 26+.** No lo reescribas
+  sobre Nordic sin justificarlo; el catálogo declara `nordic-ble` pero el nodo no lo usa.
+
 ## Stack aprobado
 
 Ver `PERQA_AGENT_BUILD_SPEC.md` §2 para la lista completa y la justificación (solo
@@ -100,10 +136,13 @@ Antes de commitear, verificar que **no** se cuela:
 
 Basado en `PERQA_AGENT_BUILD_SPEC.md` §9 y `PERQA_AGENT_RULES_GEMMA_SPEED.md` §12:
 
-- [ ] `domain/**` sigue sin imports de Android/Compose (`grep -r "android" domain/` no
-      debería dar resultados salvo comentarios).
+- [ ] `domain/**` sigue sin imports de Android/Compose (`grep -rn "android" domain/` no
+      debería dar resultados salvo comentarios) — incluye `domain/iot/**`.
 - [ ] Ningún import de `Retrofit`/`OkHttp`/`java.net` en `data/ai` ni `domain`.
 - [ ] `AndroidManifest.xml` sigue sin `android.permission.INTERNET`.
+- [ ] IoT: no se creó un segundo stack de sensor ni una segunda `RoomDatabase`; si se tocó
+      el esquema de `IotDatabase`, subió la versión **y** trae migración. Componentes IoT
+      siguen en `ui/iot/components/`, no en `ui/components/`. `tertiary` sigue siendo ámbar.
 - [ ] ViewModels nuevos exponen solo `StateFlow`, no `LiveData` ni estado mutable público.
 - [ ] Ningún prompt nuevo incluye el token `<|think|>`.
 - [ ] Toda inferencia nueva corre en `Dispatchers.Default`, nunca en Main.
